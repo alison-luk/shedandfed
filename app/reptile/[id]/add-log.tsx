@@ -30,13 +30,23 @@ const SHED_OPTIONS = ['Complete', 'Partial', 'Stuck shed', 'Blue phase'];
 
 const WEIGHT_UNITS: WeightUnit[] = ['g', 'kg', 'oz', 'lb'];
 
+function parseLogType(value: string | string[] | undefined): LogType {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw && LOG_TYPES.includes(raw as LogType)) {
+    return raw as LogType;
+  }
+  return 'feeding';
+}
+
 export default function AddLogScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, type: typeParam } = useLocalSearchParams<{ id: string; type?: string }>();
+  const initialType = parseLogType(typeParam);
   const { addLog } = useData();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
-  const [type, setType] = useState<LogType>('feeding');
+  const [type, setType] = useState<LogType>(initialType);
+  const typeLocked = Boolean(typeParam);
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
@@ -83,6 +93,7 @@ export default function AddLogScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen
         options={{
+          title: LOG_TYPE_LABELS[type],
           headerRight: () => (
             <Pressable onPress={handleSave} disabled={saving} style={styles.saveButton}>
               <Text style={[styles.saveText, { color: colors.tint, opacity: saving ? 0.5 : 1 }]}>
@@ -94,33 +105,42 @@ export default function AddLogScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Entry Type</Text>
-        <View style={styles.typeGrid}>
-          {LOG_TYPES.map((logType) => {
-            const selected = type === logType;
-            return (
-              <Pressable
-                key={logType}
-                onPress={() => setType(logType)}
-                style={[
-                  styles.typeChip,
-                  {
-                    backgroundColor: selected ? colors.tint : colors.card,
-                    borderColor: selected ? colors.tint : colors.border,
-                  },
-                ]}>
-                <SymbolView
-                  name={LOG_TYPE_ICONS[logType] as never}
-                  tintColor={selected ? '#fff' : colors.tint}
-                  size={18}
-                />
-                <Text style={[styles.typeChipText, { color: selected ? '#fff' : colors.text }]}>
-                  {LOG_TYPE_LABELS[logType]}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
+        {!typeLocked ? (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Entry Type</Text>
+            <View style={styles.typeGrid}>
+              {LOG_TYPES.map((logType) => {
+                const selected = type === logType;
+                return (
+                  <Pressable
+                    key={logType}
+                    onPress={() => setType(logType)}
+                    style={[
+                      styles.typeChip,
+                      {
+                        backgroundColor: selected ? colors.tint : colors.card,
+                        borderColor: selected ? colors.tint : colors.border,
+                      },
+                    ]}>
+                    <SymbolView
+                      name={LOG_TYPE_ICONS[logType] as never}
+                      tintColor={selected ? '#fff' : colors.tint}
+                      size={18}
+                    />
+                    <Text style={[styles.typeChipText, { color: selected ? '#fff' : colors.text }]}>
+                      {LOG_TYPE_LABELS[logType]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : (
+          <View style={[styles.typeBanner, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <SymbolView name={LOG_TYPE_ICONS[type] as never} tintColor={colors.tint} size={22} />
+            <Text style={styles.typeBannerText}>{LOG_TYPE_LABELS[type]}</Text>
+          </View>
+        )}
 
         <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Date & Time</Text>
         <Pressable
@@ -301,6 +321,19 @@ const styles = StyleSheet.create({
   typeChipText: {
     fontSize: 14,
     fontWeight: '500',
+  },
+  typeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  typeBannerText: {
+    fontSize: 17,
+    fontWeight: '600',
   },
   dateButton: {
     flexDirection: 'row',

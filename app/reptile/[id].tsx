@@ -1,6 +1,6 @@
-import { Link, Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -12,11 +12,30 @@ import {
 
 import EmptyState from '@/components/EmptyState';
 import LogEntryCard from '@/components/LogEntryCard';
+import LogFilterBar, { type LogFilter } from '@/components/LogFilterBar';
+import LogQuickActions from '@/components/LogQuickActions';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
 import type { LogEntry, Reptile } from '@/lib/types';
+
+function buildFilterCounts(logs: LogEntry[]): Record<LogFilter, number> {
+  const counts: Record<LogFilter, number> = {
+    all: logs.length,
+    feeding: 0,
+    shedding: 0,
+    temperature: 0,
+    weight: 0,
+    note: 0,
+  };
+
+  for (const log of logs) {
+    counts[log.type] += 1;
+  }
+
+  return counts;
+}
 
 export default function ReptileDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -28,20 +47,36 @@ export default function ReptileDetailScreen() {
   const [reptile, setReptile] = useState<Reptile | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<LogFilter>('all');
+  const isFirstLoad = useRef(true);
 
   const loadData = useCallback(async () => {
     if (!id) return;
-    setLoading(true);
+
+    if (isFirstLoad.current) {
+      setLoading(true);
+    }
+
     const { getReptile } = await import('@/lib/db');
     const [nextReptile, nextLogs] = await Promise.all([getReptile(id), getReptileLogs(id)]);
     setReptile(nextReptile);
     setLogs(nextLogs);
     setLoading(false);
+    isFirstLoad.current = false;
   }, [id, getReptileLogs]);
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
+
+  const filterCounts = useMemo(() => buildFilterCounts(logs), [logs]);
+
+  const filteredLogs = useMemo(
+    () => (filter === 'all' ? logs : logs.filter((log) => log.type === filter)),
+    [logs, filter]
+  );
 
   function handleDeleteReptile() {
     Alert.alert(
@@ -84,13 +119,42 @@ export default function ReptileDetailScreen() {
     );
   }
 
-  if (!reptile) {
+  if (!reptile || !id) {
     return (
       <View style={[styles.centered, { backgroundColor: colors.background }]}>
         <Text>Reptile not found.</Text>
       </View>
     );
   }
+
+  const listHeader = (
+    <>
+      <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
+          <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
+        </View>
+        <View style={styles.profileInfo}>
+          <Text style={styles.species}>{reptile.species}</Text>
+          {reptile.notes ? (
+            <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
+          ) : null}
+        </View>
+      </View>
+
+      <LogQuickActions reptileId={id} />
+
+      <View style={styles.logHeader}>
+        <Text style={styles.logTitle}>Care Log</Text>
+        <Text style={[styles.logCount, { color: colors.textSecondary }]}>
+          {filteredLogs.length} {filteredLogs.length === 1 ? 'entry' : 'entries'}
+        </Text>
+      </View>
+
+      {logs.length > 0 ? (
+        <LogFilterBar value={filter} onChange={setFilter} counts={filterCounts} />
+      ) : null}
+    </>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -109,42 +173,36 @@ export default function ReptileDetailScreen() {
         }}
       />
 
-      <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
-          <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
-        </View>
-        <View style={styles.profileInfo}>
-          <Text style={styles.species}>{reptile.species}</Text>
-          {reptile.notes ? (
-            <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
-          ) : null}
-        </View>
-      </View>
-
-      <View style={styles.logHeader}>
-        <Text style={styles.logTitle}>Care Log</Text>
-        <Link href={`/reptile/${id}/add-log`} asChild>
-          <Pressable style={[styles.logButton, { backgroundColor: colors.tint }]}>
-            <SymbolView
-              name={{ ios: 'plus', android: 'add', web: 'add' } as never}
-              tintColor="#fff"
-              size={18}
-            />
-            <Text style={styles.logButtonText}>Add Entry</Text>
-          </Pressable>
-        </Link>
-      </View>
-
       {logs.length === 0 ? (
-        <EmptyState
-          title="No logs yet"
-          message="Track feedings, shedding, temperatures, weight, and notes for this reptile."
+        <FlatList
+          data={[]}
+          ListHeaderComponent={listHeader}
+          renderItem={() => null}
+          ListEmptyComponent={
+            <EmptyState
+              title="No logs yet"
+              message="Tap a quick log icon above to record feedings, sheds, temperatures, weight, or notes."
+            />
+          }
+        />
+      ) : filteredLogs.length === 0 ? (
+        <FlatList
+          data={[]}
+          ListHeaderComponent={listHeader}
+          renderItem={() => null}
+          ListEmptyComponent={
+            <EmptyState
+              title="No matching entries"
+              message="Try a different filter to see more of this reptile's care log."
+            />
+          }
         />
       ) : (
         <FlatList
-          data={logs}
+          data={filteredLogs}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
+          ListHeaderComponent={listHeader}
           renderItem={({ item }) => (
             <LogEntryCard entry={item} onDelete={() => handleDeleteLog(item.id)} />
           )}
@@ -202,30 +260,21 @@ const styles = StyleSheet.create({
   },
   logHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'baseline',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 4,
+    paddingBottom: 4,
   },
   logTitle: {
     fontSize: 18,
     fontWeight: '700',
   },
-  logButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  logButtonText: {
-    color: '#fff',
-    fontWeight: '600',
+  logCount: {
     fontSize: 14,
   },
   list: {
-    padding: 16,
-    paddingTop: 0,
+    paddingHorizontal: 16,
+    paddingBottom: 24,
   },
 });
