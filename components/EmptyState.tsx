@@ -1,5 +1,6 @@
+import { Link, type Href } from 'expo-router';
 import { SymbolView } from 'expo-symbols';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
@@ -11,12 +12,16 @@ interface EmptyStateProps {
   title: string;
   message: string;
   icon?: PlatformIcon;
+  actionLabel?: string;
+  actionHref?: Href;
 }
 
 export default function EmptyState({
   title,
   message,
   icon = { ios: 'leaf', android: 'eco', web: 'eco' },
+  actionLabel,
+  actionHref,
 }: EmptyStateProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
@@ -28,6 +33,13 @@ export default function EmptyState({
       </View>
       <Text style={styles.title}>{title}</Text>
       <Text style={[styles.message, { color: colors.textSecondary }]}>{message}</Text>
+      {actionLabel && actionHref ? (
+        <Link href={actionHref} asChild>
+          <Pressable style={[styles.actionButton, { backgroundColor: colors.tint }]}>
+            <Text style={styles.actionText}>{actionLabel}</Text>
+          </Pressable>
+        </Link>
+      ) : null}
     </View>
   );
 }
@@ -58,5 +70,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center',
+  },
+  actionButton: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  actionText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

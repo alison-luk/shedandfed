@@ -40,6 +40,8 @@ export default function ReptilesScreen() {
         <EmptyState
           title="No reptiles yet"
           message="Add your first reptile to start tracking feedings, sheds, temperatures, and more."
+          actionLabel="Add Reptile"
+          actionHref="/reptile/add"
         />
       ) : (
         <FlatList
@@ -50,7 +52,7 @@ export default function ReptilesScreen() {
         />
       )}
 
-      {reptiles.length > 0 ? (
+      {!loading ? (
         <Link href="/reptile/add" asChild>
           <Pressable style={[styles.fab, { backgroundColor: colors.tint }]}>
             <SymbolView
