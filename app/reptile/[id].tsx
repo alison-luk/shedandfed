@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 
 import EmptyState from '@/components/EmptyState';
+import LastCareSummary from '@/components/LastCareSummary';
 import LogEntryCard from '@/components/LogEntryCard';
 import LogFilterBar, { type LogFilter } from '@/components/LogFilterBar';
 import LogQuickActions from '@/components/LogQuickActions';
@@ -18,8 +19,9 @@ import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
+import { getFeedingDueStatus } from '@/lib/care';
 import { formatLogSummary } from '@/lib/format';
-import { LOG_TYPE_LABELS, type LogEntry, Reptile } from '@/lib/types';
+import { LOG_TYPE_LABELS, type LogEntry, type Reptile, type ReptileCareSummary } from '@/lib/types';
 
 function buildFilterCounts(logs: LogEntry[]): Record<LogFilter, number> {
   const counts: Record<LogFilter, number> = {
@@ -47,6 +49,7 @@ export default function ReptileDetailScreen() {
   const colors = Colors[colorScheme];
 
   const [reptile, setReptile] = useState<Reptile | null>(null);
+  const [careSummary, setCareSummary] = useState<ReptileCareSummary | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LogFilter>('feeding');
@@ -59,10 +62,22 @@ export default function ReptileDetailScreen() {
       setLoading(true);
     }
 
-    const { getReptile } = await import('@/lib/db');
-    const [nextReptile, nextLogs] = await Promise.all([getReptile(id), getReptileLogs(id)]);
+    const { getCareSummaries, getReptile } = await import('@/lib/db');
+    const [nextReptile, nextLogs, summaries] = await Promise.all([
+      getReptile(id),
+      getReptileLogs(id),
+      getCareSummaries(),
+    ]);
     setReptile(nextReptile);
     setLogs(nextLogs);
+    setCareSummary(
+      summaries[id] ?? {
+        reptileId: id,
+        lastFed: null,
+        lastShed: null,
+        lastPoop: null,
+      }
+    );
     setLoading(false);
     isFirstLoad.current = false;
   }, [id, getReptileLogs]);
@@ -144,6 +159,12 @@ export default function ReptileDetailScreen() {
     );
   }
 
+  const dueStatus = getFeedingDueStatus(reptile, careSummary?.lastFed ?? null);
+  const dueLabel =
+    dueStatus === 'overdue' ? 'Feeding overdue' : dueStatus === 'due_soon' ? 'Feeding due soon' : null;
+  const dueColor =
+    dueStatus === 'overdue' ? colors.danger : dueStatus === 'due_soon' ? colors.warning : colors.tint;
+
   const listHeader = (
     <>
       <View
@@ -157,6 +178,16 @@ export default function ReptileDetailScreen() {
         <View style={styles.profileInfo}>
           <Text style={styles.name}>{reptile.name}</Text>
           <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
+          {reptile.feedingIntervalDays ? (
+            <Text style={[styles.schedule, { color: colors.textSecondary }]}>
+              Fed every {reptile.feedingIntervalDays} days
+              {reptile.feedingRemindersEnabled ? ' · reminders on' : ''}
+            </Text>
+          ) : null}
+          {dueLabel ? (
+            <Text style={[styles.dueBadge, { color: dueColor }]}>{dueLabel}</Text>
+          ) : null}
+          {careSummary ? <LastCareSummary summary={careSummary} /> : null}
           {reptile.notes ? (
             <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
           ) : null}
@@ -296,6 +327,15 @@ const styles = StyleSheet.create({
   species: {
     fontSize: 15,
     fontWeight: '500',
+    marginBottom: 4,
+  },
+  schedule: {
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  dueBadge: {
+    fontSize: 13,
+    fontWeight: '700',
     marginBottom: 4,
   },
   notes: {

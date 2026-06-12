@@ -101,6 +101,19 @@ export default function AddLogScreen() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    if (logId || !id || initialType !== 'feeding') return;
+
+    (async () => {
+      const { getLastFeeding } = await import('@/lib/db');
+      const lastFeeding = await getLastFeeding(id);
+      if (!lastFeeding) return;
+
+      setFood(lastFeeding.food ?? '');
+      setAmount(lastFeeding.amount ?? '');
+    })();
+  }, [id, initialType, logId]);
+
+  useEffect(() => {
     if (!logId) return;
 
     (async () => {

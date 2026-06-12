@@ -4,7 +4,9 @@ import type {
   CreateLogInput,
   CreateReptileInput,
   LogEntry,
+  LogType,
   Reptile,
+  ReptileCareSummary,
   UpdateLogInput,
   UpdateReptileInput,
 } from './types';
@@ -88,6 +90,20 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
   } catch {
     // Column already exists on upgraded databases.
   }
+
+  try {
+    await db.execAsync('ALTER TABLE reptiles ADD COLUMN feeding_interval_days INTEGER;');
+  } catch {
+    // Column already exists on upgraded databases.
+  }
+
+  try {
+    await db.execAsync(
+      'ALTER TABLE reptiles ADD COLUMN feeding_reminders_enabled INTEGER NOT NULL DEFAULT 0;'
+    );
+  } catch {
+    // Column already exists on upgraded databases.
+  }
 }
 
 function generateId(): string {
@@ -100,6 +116,9 @@ function mapReptile(row: Record<string, unknown>): Reptile {
     name: row.name as string,
     species: row.species as string,
     notes: (row.notes as string | null) ?? null,
+    feedingIntervalDays:
+      row.feeding_interval_days != null ? Number(row.feeding_interval_days) : null,
+    feedingRemindersEnabled: Boolean(row.feeding_reminders_enabled),
     createdAt: row.created_at as string,
   };
 }
@@ -152,12 +171,24 @@ export function createReptile(input: CreateReptileInput): Promise<Reptile> {
       name: input.name.trim(),
       species: input.species.trim(),
       notes: input.notes?.trim() || null,
+      feedingIntervalDays: input.feedingIntervalDays ?? null,
+      feedingRemindersEnabled: input.feedingRemindersEnabled ?? false,
       createdAt: new Date().toISOString(),
     };
 
     await db.runAsync(
-      'INSERT INTO reptiles (id, name, species, notes, created_at) VALUES (?, ?, ?, ?, ?)',
-      [reptile.id, reptile.name, reptile.species, reptile.notes, reptile.createdAt]
+      `INSERT INTO reptiles (
+        id, name, species, notes, feeding_interval_days, feeding_reminders_enabled, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        reptile.id,
+        reptile.name,
+        reptile.species,
+        reptile.notes,
+        reptile.feedingIntervalDays,
+        reptile.feedingRemindersEnabled ? 1 : 0,
+        reptile.createdAt,
+      ]
     );
 
     return reptile;
@@ -180,11 +211,22 @@ export function updateReptile(input: UpdateReptileInput): Promise<Reptile> {
       name: input.name.trim(),
       species: input.species.trim(),
       notes: input.notes?.trim() || null,
+      feedingIntervalDays: input.feedingIntervalDays ?? null,
+      feedingRemindersEnabled: input.feedingRemindersEnabled ?? false,
     };
 
     await db.runAsync(
-      'UPDATE reptiles SET name = ?, species = ?, notes = ? WHERE id = ?',
-      [reptile.name, reptile.species, reptile.notes, reptile.id]
+      `UPDATE reptiles SET
+        name = ?, species = ?, notes = ?, feeding_interval_days = ?, feeding_reminders_enabled = ?
+      WHERE id = ?`,
+      [
+        reptile.name,
+        reptile.species,
+        reptile.notes,
+        reptile.feedingIntervalDays,
+        reptile.feedingRemindersEnabled ? 1 : 0,
+        reptile.id,
+      ]
     );
 
     return reptile;
@@ -337,5 +379,58 @@ export function deleteLog(id: string): Promise<void> {
   return enqueue(async () => {
     const db = await getDatabase();
     await db.runAsync('DELETE FROM log_entries WHERE id = ?', [id]);
+  });
+}
+
+const CARE_SUMMARY_TYPES: LogType[] = ['feeding', 'shedding', 'poop'];
+
+export function getCareSummaries(): Promise<Record<string, ReptileCareSummary>> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const placeholders = CARE_SUMMARY_TYPES.map(() => '?').join(', ');
+    const rows = await db.getAllAsync<Record<string, unknown>>(
+      `SELECT reptile_id, type, MAX(date) AS last_date
+       FROM log_entries
+       WHERE type IN (${placeholders})
+       GROUP BY reptile_id, type`,
+      CARE_SUMMARY_TYPES
+    );
+
+    const summaries: Record<string, ReptileCareSummary> = {};
+
+    for (const row of rows) {
+      const reptileId = row.reptile_id as string;
+      const type = row.type as LogType;
+      const lastDate = row.last_date as string;
+
+      if (!summaries[reptileId]) {
+        summaries[reptileId] = {
+          reptileId,
+          lastFed: null,
+          lastShed: null,
+          lastPoop: null,
+        };
+      }
+
+      if (type === 'feeding') summaries[reptileId].lastFed = lastDate;
+      if (type === 'shedding') summaries[reptileId].lastShed = lastDate;
+      if (type === 'poop') summaries[reptileId].lastPoop = lastDate;
+    }
+
+    return summaries;
+  });
+}
+
+export function getLastFeeding(reptileId: string): Promise<LogEntry | null> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<Record<string, unknown>>(
+      `SELECT * FROM log_entries
+       WHERE reptile_id = ? AND type = 'feeding'
+       ORDER BY date DESC
+       LIMIT 1`,
+      [reptileId]
+    );
+    return row ? mapLogEntry(row) : null;
   });
 }

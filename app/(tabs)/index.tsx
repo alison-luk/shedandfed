@@ -13,7 +13,7 @@ import { useData } from '@/contexts/DataContext';
 import { useBottomTabOffset } from '@/lib/layout';
 
 export default function ReptilesScreen() {
-  const { reptiles, loading } = useData();
+  const { reptiles, careSummaries, loading } = useData();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const tabOffset = useBottomTabOffset(16);
@@ -76,7 +76,9 @@ export default function ReptilesScreen() {
           ListHeaderComponent={
             <SearchField value={searchQuery} onChangeText={setSearchQuery} />
           }
-          renderItem={({ item }) => <ReptileCard reptile={item} />}
+          renderItem={({ item }) => (
+            <ReptileCard reptile={item} summary={careSummaries[item.id]} />
+          )}
           ListEmptyComponent={
             <EmptyState
               title="No matches"

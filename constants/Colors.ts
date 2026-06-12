@@ -14,6 +14,7 @@ export default {
     tabIconDefault: '#9CAF9C',
     tabIconSelected: primary,
     danger: '#C1121F',
+    warning: '#D97706',
     success: primaryLight,
   },
   dark: {
@@ -27,6 +28,7 @@ export default {
     tabIconDefault: '#6B7B6B',
     tabIconSelected: '#52B788',
     danger: '#E63946',
+    warning: '#F59E0B',
     success: '#52B788',
   },
 };
