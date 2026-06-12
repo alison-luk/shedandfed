@@ -20,6 +20,7 @@ interface LogFilterBarProps {
 
 function filterLabel(filter: LogFilter): string {
   if (filter === 'all') return 'All entries';
+  if (filter === 'feeding') return 'Feeding';
   return LOG_TYPE_LABELS[filter];
 }
 

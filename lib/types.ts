@@ -47,6 +47,10 @@ export interface CreateLogInput {
   weightUnit?: WeightUnit;
 }
 
+export interface UpdateLogInput extends CreateLogInput {
+  id: string;
+}
+
 export const LOG_TYPE_LABELS: Record<LogType, string> = {
   feeding: 'Feeding',
   shedding: 'Shedding',

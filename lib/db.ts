@@ -1,6 +1,6 @@
 import * as SQLite from 'expo-sqlite';
 
-import type { CreateLogInput, CreateReptileInput, LogEntry, Reptile } from './types';
+import type { CreateLogInput, CreateReptileInput, LogEntry, Reptile, UpdateLogInput } from './types';
 
 const DATABASE_NAME = 'shedandfed.db';
 
@@ -225,6 +225,61 @@ export function createLog(input: CreateLogInput): Promise<LogEntry> {
         entry.ambient,
         entry.weight,
         entry.weightUnit,
+      ]
+    );
+
+    return entry;
+  });
+}
+
+export function getLog(id: string): Promise<LogEntry | null> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<Record<string, unknown>>(
+      'SELECT * FROM log_entries WHERE id = ?',
+      [id]
+    );
+    return row ? mapLogEntry(row) : null;
+  });
+}
+
+export function updateLog(input: UpdateLogInput): Promise<LogEntry> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const entry: LogEntry = {
+      id: input.id,
+      reptileId: input.reptileId,
+      type: input.type,
+      date: input.date,
+      notes: input.notes?.trim() || null,
+      food: input.food?.trim() || null,
+      amount: input.amount?.trim() || null,
+      shedQuality: input.shedQuality?.trim() || null,
+      hotSide: input.hotSide ?? null,
+      coolSide: input.coolSide ?? null,
+      ambient: input.ambient ?? null,
+      weight: input.weight ?? null,
+      weightUnit: input.weightUnit ?? null,
+    };
+
+    await db.runAsync(
+      `UPDATE log_entries SET
+        type = ?, date = ?, notes = ?, food = ?, amount = ?, shed_quality = ?,
+        hot_side = ?, cool_side = ?, ambient = ?, weight = ?, weight_unit = ?
+      WHERE id = ?`,
+      [
+        entry.type,
+        entry.date,
+        entry.notes,
+        entry.food,
+        entry.amount,
+        entry.shedQuality,
+        entry.hotSide,
+        entry.coolSide,
+        entry.ambient,
+        entry.weight,
+        entry.weightUnit,
+        entry.id,
       ]
     );
 

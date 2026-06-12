@@ -18,7 +18,8 @@ import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
-import type { LogEntry, Reptile } from '@/lib/types';
+import { formatLogSummary } from '@/lib/format';
+import { LOG_TYPE_LABELS, type LogEntry, Reptile } from '@/lib/types';
 
 function buildFilterCounts(logs: LogEntry[]): Record<LogFilter, number> {
   const counts: Record<LogFilter, number> = {
@@ -47,7 +48,7 @@ export default function ReptileDetailScreen() {
   const [reptile, setReptile] = useState<Reptile | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<LogFilter>('all');
+  const [filter, setFilter] = useState<LogFilter>('feeding');
   const isFirstLoad = useRef(true);
 
   const loadData = useCallback(async () => {
@@ -95,6 +96,21 @@ export default function ReptileDetailScreen() {
         },
       ]
     );
+  }
+
+  function handleLongPressLog(entry: LogEntry) {
+    Alert.alert(LOG_TYPE_LABELS[entry.type], formatLogSummary(entry), [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Edit',
+        onPress: () => router.push(`/reptile/${id}/add-log?logId=${entry.id}`),
+      },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => handleDeleteLog(entry.id),
+      },
+    ]);
   }
 
   function handleDeleteLog(logId: string) {
@@ -183,7 +199,11 @@ export default function ReptileDetailScreen() {
         contentContainerStyle={styles.list}
         ListHeaderComponent={listHeader}
         renderItem={({ item }) => (
-          <LogEntryCard entry={item} onDelete={() => handleDeleteLog(item.id)} />
+          <LogEntryCard
+            entry={item}
+            onDelete={() => handleDeleteLog(item.id)}
+            onLongPress={() => handleLongPressLog(item)}
+          />
         )}
         ListEmptyComponent={
           logs.length === 0 ? (
@@ -193,8 +213,12 @@ export default function ReptileDetailScreen() {
             />
           ) : (
             <EmptyState
-              title="No matching entries"
-              message="Try a different filter to see more of this reptile's care log."
+              title={filter === 'feeding' ? 'No feeding entries' : 'No matching entries'}
+              message={
+                filter === 'feeding'
+                  ? 'Log a feeding above, or change the filter to All entries to see everything.'
+                  : 'Try a different filter to see more of this reptile\'s care log.'
+              }
             />
           )
         }

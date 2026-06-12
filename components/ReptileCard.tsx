@@ -1,4 +1,3 @@
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -16,21 +15,20 @@ export default function ReptileCard({ reptile }: ReptileCardProps) {
   const colors = Colors[colorScheme];
 
   return (
-    <Link href={`/reptile/${reptile.id}`} asChild>
-      <Pressable
-        style={({ pressed }) => [
-          styles.card,
-          { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.9 : 1 },
-        ]}>
-        <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
+    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Link href={`/reptile/${reptile.id}`} asChild>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open ${reptile.name}`}
+          style={({ pressed }) => [
+            styles.avatar,
+            { backgroundColor: colors.tint, opacity: pressed ? 0.85 : 1 },
+          ]}>
           <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
-        </View>
-        <View style={styles.content}>
-          <Text style={styles.name}>{reptile.name}</Text>
-        </View>
-        <MaterialIcons name="chevron-right" size={22} color={colors.textSecondary} />
-      </Pressable>
-    </Link>
+        </Pressable>
+      </Link>
+      <Text style={styles.name}>{reptile.name}</Text>
+    </View>
   );
 }
 
@@ -42,6 +40,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     borderWidth: 1,
     marginBottom: 12,
+    gap: 14,
   },
   avatar: {
     width: 48,
@@ -49,17 +48,14 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
   },
   avatarText: {
     color: '#fff',
     fontSize: 20,
     fontWeight: '700',
   },
-  content: {
-    flex: 1,
-  },
   name: {
+    flex: 1,
     fontSize: 17,
     fontWeight: '600',
   },

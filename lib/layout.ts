@@ -1,7 +1,7 @@
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-/** Default React Navigation bottom tab bar content height. */
-const TAB_BAR_HEIGHT = 49;
+/** Custom tab bar block height plus padding (safe area added separately). */
+const TAB_BAR_HEIGHT = 96;
 
 export function useBottomTabOffset(extra = 12): number {
   const insets = useSafeAreaInsets();

@@ -12,14 +12,19 @@ interface LogEntryCardProps {
   entry: LogEntry;
   reptileName?: string;
   onDelete?: () => void;
+  onLongPress?: () => void;
 }
 
-export default function LogEntryCard({ entry, reptileName, onDelete }: LogEntryCardProps) {
+export default function LogEntryCard({ entry, reptileName, onDelete, onLongPress }: LogEntryCardProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <Pressable
+      onLongPress={onLongPress}
+      delayLongPress={400}
+      accessibilityHint="Hold to edit this entry"
+      style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
         <LogTypeIcon type={entry.type} size={22} color={colors.tint} />
       </View>
@@ -50,7 +55,7 @@ export default function LogEntryCard({ entry, reptileName, onDelete }: LogEntryC
           <MaterialIcons name="delete-outline" size={20} color={colors.danger} />
         </Pressable>
       ) : null}
-    </View>
+    </Pressable>
   );
 }
 

@@ -2,8 +2,9 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import LogTypeIcon from '@/components/LogTypeIcon';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
   Platform,
@@ -34,15 +35,53 @@ function parseLogType(value: string | string[] | undefined): LogType {
   return 'feeding';
 }
 
+function buildLogPayload(
+  reptileId: string,
+  type: LogType,
+  date: Date,
+  fields: {
+    notes: string;
+    food: string;
+    amount: string;
+    shedQuality: string;
+    hotSide: string;
+    coolSide: string;
+    ambient: string;
+    weight: string;
+    weightUnit: WeightUnit;
+  }
+) {
+  return {
+    reptileId,
+    type,
+    date: date.toISOString(),
+    notes: fields.notes || undefined,
+    food: type === 'feeding' ? fields.food : undefined,
+    amount: type === 'feeding' ? fields.amount : undefined,
+    shedQuality: type === 'shedding' ? fields.shedQuality : undefined,
+    hotSide: type === 'temperature' && fields.hotSide ? parseFloat(fields.hotSide) : undefined,
+    coolSide: type === 'temperature' && fields.coolSide ? parseFloat(fields.coolSide) : undefined,
+    ambient: type === 'temperature' && fields.ambient ? parseFloat(fields.ambient) : undefined,
+    weight: type === 'weight' && fields.weight ? parseFloat(fields.weight) : undefined,
+    weightUnit: type === 'weight' ? fields.weightUnit : undefined,
+  };
+}
+
 export default function AddLogScreen() {
-  const { id, type: typeParam } = useLocalSearchParams<{ id: string; type?: string }>();
+  const { id, type: typeParam, logId } = useLocalSearchParams<{
+    id: string;
+    type?: string;
+    logId?: string;
+  }>();
+  const isEditing = Boolean(logId);
   const initialType = parseLogType(typeParam);
-  const { addLog } = useData();
+  const { addLog, editLog } = useData();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
+  const [loadingEntry, setLoadingEntry] = useState(isEditing);
   const [type, setType] = useState<LogType>(initialType);
-  const typeLocked = Boolean(typeParam);
+  const typeLocked = Boolean(typeParam) && !isEditing;
   const [date, setDate] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
@@ -56,25 +95,55 @@ export default function AddLogScreen() {
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('g');
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    if (!logId) return;
+
+    (async () => {
+      const { getLog } = await import('@/lib/db');
+      const entry = await getLog(logId);
+      if (!entry) {
+        Alert.alert('Error', 'Log entry not found.');
+        router.back();
+        return;
+      }
+
+      setType(entry.type);
+      setDate(new Date(entry.date));
+      setNotes(entry.notes ?? '');
+      setFood(entry.food ?? '');
+      setAmount(entry.amount ?? '');
+      setShedQuality(entry.shedQuality ?? 'Complete');
+      setHotSide(entry.hotSide != null ? String(entry.hotSide) : '');
+      setCoolSide(entry.coolSide != null ? String(entry.coolSide) : '');
+      setAmbient(entry.ambient != null ? String(entry.ambient) : '');
+      setWeight(entry.weight != null ? String(entry.weight) : '');
+      setWeightUnit(entry.weightUnit ?? 'g');
+      setLoadingEntry(false);
+    })();
+  }, [logId]);
+
   async function handleSave() {
     if (!id) return;
 
+    const payload = buildLogPayload(id, type, date, {
+      notes,
+      food,
+      amount,
+      shedQuality,
+      hotSide,
+      coolSide,
+      ambient,
+      weight,
+      weightUnit,
+    });
+
     setSaving(true);
     try {
-      await addLog({
-        reptileId: id,
-        type,
-        date: date.toISOString(),
-        notes: notes || undefined,
-        food: type === 'feeding' ? food : undefined,
-        amount: type === 'feeding' ? amount : undefined,
-        shedQuality: type === 'shedding' ? shedQuality : undefined,
-        hotSide: type === 'temperature' && hotSide ? parseFloat(hotSide) : undefined,
-        coolSide: type === 'temperature' && coolSide ? parseFloat(coolSide) : undefined,
-        ambient: type === 'temperature' && ambient ? parseFloat(ambient) : undefined,
-        weight: type === 'weight' && weight ? parseFloat(weight) : undefined,
-        weightUnit: type === 'weight' ? weightUnit : undefined,
-      });
+      if (isEditing && logId) {
+        await editLog({ id: logId, ...payload });
+      } else {
+        await addLog(payload);
+      }
       router.back();
     } catch {
       Alert.alert('Error', 'Could not save log entry. Please try again.');
@@ -83,13 +152,21 @@ export default function AddLogScreen() {
     }
   }
 
+  if (loadingEntry) {
+    return (
+      <View style={[styles.loading, { backgroundColor: colors.background }]}>
+        <ActivityIndicator color={colors.tint} />
+      </View>
+    );
+  }
+
   return (
     <KeyboardAvoidingView
       style={[styles.container, { backgroundColor: colors.background }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <Stack.Screen
         options={{
-          title: LOG_TYPE_LABELS[type],
+          title: isEditing ? 'Edit Entry' : LOG_TYPE_LABELS[type],
           headerRight: () => (
             <Pressable onPress={handleSave} disabled={saving} style={styles.saveButton}>
               <Text style={[styles.saveText, { color: colors.tint, opacity: saving ? 0.5 : 1 }]}>
@@ -275,6 +352,11 @@ export default function AddLogScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  loading: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   form: {
     padding: 16,
