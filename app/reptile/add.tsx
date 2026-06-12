@@ -16,7 +16,7 @@ import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
-import { requestNotificationPermissions } from '@/lib/notifications';
+import { areNotificationsAvailable, requestNotificationPermissions } from '@/lib/notifications';
 
 export default function AddReptileScreen() {
   const { addReptile } = useData();
@@ -31,6 +31,10 @@ export default function AddReptileScreen() {
   const [saving, setSaving] = useState(false);
 
   async function handleRemindersChange(enabled: boolean) {
+    if (enabled && !areNotificationsAvailable()) {
+      return;
+    }
+
     if (enabled) {
       const granted = await requestNotificationPermissions();
       if (!granted) {

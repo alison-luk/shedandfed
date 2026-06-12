@@ -4,6 +4,7 @@ import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { FEEDING_INTERVAL_PRESETS } from '@/lib/care';
+import { areNotificationsAvailable, getNotificationsUnavailableMessage } from '@/lib/notifications';
 
 interface FeedingScheduleFieldsProps {
   intervalDays: number | null;
@@ -20,6 +21,7 @@ export default function FeedingScheduleFields({
 }: FeedingScheduleFieldsProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const notificationsAvailable = areNotificationsAvailable();
 
   return (
     <View style={styles.section}>
@@ -68,21 +70,30 @@ export default function FeedingScheduleFields({
         })}
       </View>
 
-      <View style={[styles.reminderRow, { borderColor: colors.border }]}>
-        <View style={styles.reminderCopy}>
-          <Text style={[styles.reminderTitle, { color: colors.text }]}>Feeding reminders</Text>
-          <Text style={[styles.reminderHint, { color: colors.textSecondary }]}>
-            Local notification when feeding is due
+      {notificationsAvailable ? (
+        <View style={[styles.reminderRow, { borderColor: colors.border }]}>
+          <View style={styles.reminderCopy}>
+            <Text style={[styles.reminderTitle, { color: colors.text }]}>Feeding reminders</Text>
+            <Text style={[styles.reminderHint, { color: colors.textSecondary }]}>
+              Local notification when feeding is due
+            </Text>
+          </View>
+          <Switch
+            value={remindersEnabled}
+            onValueChange={onRemindersChange}
+            disabled={!intervalDays}
+            trackColor={{ false: colors.border, true: colors.tint }}
+            thumbColor="#fff"
+          />
+        </View>
+      ) : (
+        <View style={[styles.expoGoNotice, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.expoGoTitle, { color: colors.text }]}>Reminders need a dev build</Text>
+          <Text style={[styles.expoGoHint, { color: colors.textSecondary }]}>
+            {getNotificationsUnavailableMessage()} Due and overdue badges on the home screen still work in Expo Go.
           </Text>
         </View>
-        <Switch
-          value={remindersEnabled}
-          onValueChange={onRemindersChange}
-          disabled={!intervalDays}
-          trackColor={{ false: colors.border, true: colors.tint }}
-          thumbColor="#fff"
-        />
-      </View>
+      )}
     </View>
   );
 }
@@ -140,6 +151,21 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   reminderHint: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  expoGoNotice: {
+    marginTop: 4,
+    padding: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  expoGoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  expoGoHint: {
     fontSize: 13,
     lineHeight: 18,
   },
