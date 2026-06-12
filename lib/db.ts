@@ -104,6 +104,18 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
   } catch {
     // Column already exists on upgraded databases.
   }
+
+  try {
+    await db.execAsync('ALTER TABLE reptiles ADD COLUMN image_uri TEXT;');
+  } catch {
+    // Column already exists on upgraded databases.
+  }
+
+  try {
+    await db.execAsync('ALTER TABLE log_entries ADD COLUMN health_category TEXT;');
+  } catch {
+    // Column already exists on upgraded databases.
+  }
 }
 
 function generateId(): string {
@@ -119,6 +131,7 @@ function mapReptile(row: Record<string, unknown>): Reptile {
     feedingIntervalDays:
       row.feeding_interval_days != null ? Number(row.feeding_interval_days) : null,
     feedingRemindersEnabled: Boolean(row.feeding_reminders_enabled),
+    imageUri: (row.image_uri as string | null) ?? null,
     createdAt: row.created_at as string,
   };
 }
@@ -134,6 +147,7 @@ function mapLogEntry(row: Record<string, unknown>): LogEntry {
     amount: (row.amount as string | null) ?? null,
     shedQuality: (row.shed_quality as string | null) ?? null,
     poopQuality: (row.poop_quality as string | null) ?? null,
+    healthCategory: (row.health_category as string | null) ?? null,
     hotSide: row.hot_side != null ? Number(row.hot_side) : null,
     coolSide: row.cool_side != null ? Number(row.cool_side) : null,
     ambient: row.ambient != null ? Number(row.ambient) : null,
@@ -173,13 +187,14 @@ export function createReptile(input: CreateReptileInput): Promise<Reptile> {
       notes: input.notes?.trim() || null,
       feedingIntervalDays: input.feedingIntervalDays ?? null,
       feedingRemindersEnabled: input.feedingRemindersEnabled ?? false,
+      imageUri: input.imageUri ?? null,
       createdAt: new Date().toISOString(),
     };
 
     await db.runAsync(
       `INSERT INTO reptiles (
-        id, name, species, notes, feeding_interval_days, feeding_reminders_enabled, created_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        id, name, species, notes, feeding_interval_days, feeding_reminders_enabled, image_uri, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         reptile.id,
         reptile.name,
@@ -187,6 +202,7 @@ export function createReptile(input: CreateReptileInput): Promise<Reptile> {
         reptile.notes,
         reptile.feedingIntervalDays,
         reptile.feedingRemindersEnabled ? 1 : 0,
+        reptile.imageUri,
         reptile.createdAt,
       ]
     );
@@ -213,11 +229,13 @@ export function updateReptile(input: UpdateReptileInput): Promise<Reptile> {
       notes: input.notes?.trim() || null,
       feedingIntervalDays: input.feedingIntervalDays ?? null,
       feedingRemindersEnabled: input.feedingRemindersEnabled ?? false,
+      imageUri: input.imageUri !== undefined ? input.imageUri : mapReptile(row).imageUri,
     };
 
     await db.runAsync(
       `UPDATE reptiles SET
-        name = ?, species = ?, notes = ?, feeding_interval_days = ?, feeding_reminders_enabled = ?
+        name = ?, species = ?, notes = ?, feeding_interval_days = ?, feeding_reminders_enabled = ?,
+        image_uri = ?
       WHERE id = ?`,
       [
         reptile.name,
@@ -225,6 +243,7 @@ export function updateReptile(input: UpdateReptileInput): Promise<Reptile> {
         reptile.notes,
         reptile.feedingIntervalDays,
         reptile.feedingRemindersEnabled ? 1 : 0,
+        reptile.imageUri,
         reptile.id,
       ]
     );
@@ -284,6 +303,7 @@ export function createLog(input: CreateLogInput): Promise<LogEntry> {
       amount: input.amount?.trim() || null,
       shedQuality: input.shedQuality?.trim() || null,
       poopQuality: input.poopQuality?.trim() || null,
+      healthCategory: input.healthCategory?.trim() || null,
       hotSide: input.hotSide ?? null,
       coolSide: input.coolSide ?? null,
       ambient: input.ambient ?? null,
@@ -294,8 +314,8 @@ export function createLog(input: CreateLogInput): Promise<LogEntry> {
     await db.runAsync(
       `INSERT INTO log_entries (
         id, reptile_id, type, date, notes, food, amount, shed_quality, poop_quality,
-        hot_side, cool_side, ambient, weight, weight_unit
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        health_category, hot_side, cool_side, ambient, weight, weight_unit
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         entry.id,
         entry.reptileId,
@@ -306,6 +326,7 @@ export function createLog(input: CreateLogInput): Promise<LogEntry> {
         entry.amount,
         entry.shedQuality,
         entry.poopQuality,
+        entry.healthCategory,
         entry.hotSide,
         entry.coolSide,
         entry.ambient,
@@ -342,6 +363,7 @@ export function updateLog(input: UpdateLogInput): Promise<LogEntry> {
       amount: input.amount?.trim() || null,
       shedQuality: input.shedQuality?.trim() || null,
       poopQuality: input.poopQuality?.trim() || null,
+      healthCategory: input.healthCategory?.trim() || null,
       hotSide: input.hotSide ?? null,
       coolSide: input.coolSide ?? null,
       ambient: input.ambient ?? null,
@@ -352,7 +374,7 @@ export function updateLog(input: UpdateLogInput): Promise<LogEntry> {
     await db.runAsync(
       `UPDATE log_entries SET
         type = ?, date = ?, notes = ?, food = ?, amount = ?, shed_quality = ?, poop_quality = ?,
-        hot_side = ?, cool_side = ?, ambient = ?, weight = ?, weight_unit = ?
+        health_category = ?, hot_side = ?, cool_side = ?, ambient = ?, weight = ?, weight_unit = ?
       WHERE id = ?`,
       [
         entry.type,
@@ -362,6 +384,7 @@ export function updateLog(input: UpdateLogInput): Promise<LogEntry> {
         entry.amount,
         entry.shedQuality,
         entry.poopQuality,
+        entry.healthCategory,
         entry.hotSide,
         entry.coolSide,
         entry.ambient,

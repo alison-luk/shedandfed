@@ -9,6 +9,7 @@ const ICON_NAMES: Record<LogType, keyof typeof MaterialIcons.glyphMap> = {
   weight: 'monitor-weight',
   poop: 'water-drop',
   note: 'sticky-note-2',
+  health: 'medical-services',
 };
 
 interface LogTypeIconProps {

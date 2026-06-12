@@ -12,14 +12,16 @@ import {
 
 import FeedingScheduleFields from '@/components/FeedingScheduleFields';
 import FormField from '@/components/FormField';
+import ProfilePhotoPicker from '@/components/ProfilePhotoPicker';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
+import { persistReptilePhoto } from '@/lib/images';
 import { areNotificationsAvailable, requestNotificationPermissions } from '@/lib/notifications';
 
 export default function AddReptileScreen() {
-  const { addReptile } = useData();
+  const { addReptile, editReptile } = useData();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
@@ -28,6 +30,7 @@ export default function AddReptileScreen() {
   const [notes, setNotes] = useState('');
   const [feedingIntervalDays, setFeedingIntervalDays] = useState<number | null>(7);
   const [feedingRemindersEnabled, setFeedingRemindersEnabled] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function handleRemindersChange(enabled: boolean) {
@@ -67,6 +70,20 @@ export default function AddReptileScreen() {
         feedingIntervalDays,
         feedingRemindersEnabled,
       });
+
+      if (photoUri) {
+        const savedUri = await persistReptilePhoto(reptile.id, photoUri);
+        await editReptile({
+          id: reptile.id,
+          name,
+          species,
+          notes,
+          feedingIntervalDays,
+          feedingRemindersEnabled,
+          imageUri: savedUri,
+        });
+      }
+
       router.replace(`/reptile/${reptile.id}`);
     } catch {
       Alert.alert('Error', 'Could not save reptile. Please try again.');
@@ -91,6 +108,7 @@ export default function AddReptileScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+        <ProfilePhotoPicker name={name} imageUri={photoUri} onImageChange={setPhotoUri} />
         <FormField
           label="Name"
           value={name}

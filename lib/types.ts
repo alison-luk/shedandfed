@@ -1,12 +1,37 @@
-export type LogType = 'feeding' | 'shedding' | 'temperature' | 'weight' | 'poop' | 'note';
+export type LogType =
+  | 'feeding'
+  | 'shedding'
+  | 'temperature'
+  | 'weight'
+  | 'poop'
+  | 'note'
+  | 'health';
 
 export type WeightUnit = 'g' | 'kg' | 'oz' | 'lb';
+
+export type HealthCategory =
+  | 'Vet visit'
+  | 'Medication'
+  | 'Illness'
+  | 'Checkup'
+  | 'Injury'
+  | 'Other';
+
+export const HEALTH_CATEGORIES: HealthCategory[] = [
+  'Vet visit',
+  'Medication',
+  'Illness',
+  'Checkup',
+  'Injury',
+  'Other',
+];
 
 export interface Reptile {
   id: string;
   name: string;
   species: string;
   notes: string | null;
+  imageUri: string | null;
   feedingIntervalDays: number | null;
   feedingRemindersEnabled: boolean;
   createdAt: string;
@@ -29,6 +54,7 @@ export interface LogEntry {
   amount: string | null;
   shedQuality: string | null;
   poopQuality: string | null;
+  healthCategory: string | null;
   hotSide: number | null;
   coolSide: number | null;
   ambient: number | null;
@@ -40,6 +66,7 @@ export interface CreateReptileInput {
   name: string;
   species: string;
   notes?: string;
+  imageUri?: string | null;
   feedingIntervalDays?: number | null;
   feedingRemindersEnabled?: boolean;
 }
@@ -49,6 +76,7 @@ export interface UpdateReptileInput {
   name: string;
   species: string;
   notes?: string;
+  imageUri?: string | null;
   feedingIntervalDays?: number | null;
   feedingRemindersEnabled?: boolean;
 }
@@ -62,6 +90,7 @@ export interface CreateLogInput {
   amount?: string;
   shedQuality?: string;
   poopQuality?: string;
+  healthCategory?: string;
   hotSide?: number;
   coolSide?: number;
   ambient?: number;
@@ -82,6 +111,7 @@ export const LOG_TYPE_LABELS: Record<LogType, string> = {
   weight: 'Weight',
   poop: 'Poop',
   note: 'Note',
+  health: 'Health',
 };
 
 /** Shorter labels for the quick-log grid so text stays centred under each icon. */
@@ -92,6 +122,7 @@ export const QUICK_LOG_LABELS: Record<LogType, string> = {
   weight: 'Weight',
   poop: 'Poop',
   note: 'Note',
+  health: 'Health',
 };
 
 export const LOG_TYPE_ICONS = {
@@ -101,4 +132,5 @@ export const LOG_TYPE_ICONS = {
   weight: { ios: 'scalemass', android: 'scale', web: 'scale' },
   poop: { ios: 'drop.fill', android: 'water-drop', web: 'water-drop' },
   note: { ios: 'note.text', android: 'note', web: 'note' },
+  health: { ios: 'heart.text.square', android: 'medical-services', web: 'medical-services' },
 } as const satisfies Record<LogType, { ios: string; android: string; web: string }>;

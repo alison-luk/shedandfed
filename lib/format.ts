@@ -90,10 +90,17 @@ export function formatLogDetails(entry: LogEntry): LogDetailLine[] {
     case 'note':
       if (entry.notes) lines.push({ label: 'Note', value: entry.notes });
       break;
+    case 'health':
+      if (entry.healthCategory) lines.push({ label: 'Category', value: entry.healthCategory });
+      break;
   }
 
-  if (entry.notes && entry.type !== 'note') {
+  if (entry.notes && entry.type !== 'note' && entry.type !== 'health') {
     lines.push({ label: 'Notes', value: entry.notes });
+  }
+
+  if (entry.notes && entry.type === 'health') {
+    lines.push({ label: 'Details', value: entry.notes });
   }
 
   if (lines.length === 0) {

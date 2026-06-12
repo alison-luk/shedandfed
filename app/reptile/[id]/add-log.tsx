@@ -19,9 +19,23 @@ import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
-import { LOG_TYPE_LABELS, TEMPERATURE_UNIT, type LogType, type WeightUnit } from '@/lib/types';
+import {
+  HEALTH_CATEGORIES,
+  LOG_TYPE_LABELS,
+  TEMPERATURE_UNIT,
+  type LogType,
+  type WeightUnit,
+} from '@/lib/types';
 
-const LOG_TYPES: LogType[] = ['feeding', 'shedding', 'temperature', 'weight', 'poop', 'note'];
+const LOG_TYPES: LogType[] = [
+  'feeding',
+  'shedding',
+  'temperature',
+  'weight',
+  'poop',
+  'health',
+  'note',
+];
 
 const SHED_OPTIONS = ['Complete', 'Partial', 'Stuck shed', 'Blue phase'];
 
@@ -47,6 +61,7 @@ function buildLogPayload(
     amount: string;
     shedQuality: string;
     poopQuality: string;
+    healthCategory: string;
     hotSide: string;
     coolSide: string;
     ambient: string;
@@ -63,6 +78,7 @@ function buildLogPayload(
     amount: type === 'feeding' ? fields.amount : undefined,
     shedQuality: type === 'shedding' ? fields.shedQuality : undefined,
     poopQuality: type === 'poop' ? fields.poopQuality : undefined,
+    healthCategory: type === 'health' ? fields.healthCategory : undefined,
     hotSide: type === 'temperature' && fields.hotSide ? parseFloat(fields.hotSide) : undefined,
     coolSide: type === 'temperature' && fields.coolSide ? parseFloat(fields.coolSide) : undefined,
     ambient: type === 'temperature' && fields.ambient ? parseFloat(fields.ambient) : undefined,
@@ -93,6 +109,7 @@ export default function AddLogScreen() {
   const [amount, setAmount] = useState('');
   const [shedQuality, setShedQuality] = useState('Complete');
   const [poopQuality, setPoopQuality] = useState('Normal');
+  const [healthCategory, setHealthCategory] = useState<string>(HEALTH_CATEGORIES[0]);
   const [hotSide, setHotSide] = useState('');
   const [coolSide, setCoolSide] = useState('');
   const [ambient, setAmbient] = useState('');
@@ -132,6 +149,7 @@ export default function AddLogScreen() {
       setAmount(entry.amount ?? '');
       setShedQuality(entry.shedQuality ?? 'Complete');
       setPoopQuality(entry.poopQuality ?? 'Normal');
+      setHealthCategory(entry.healthCategory ?? HEALTH_CATEGORIES[0]);
       setHotSide(entry.hotSide != null ? String(entry.hotSide) : '');
       setCoolSide(entry.coolSide != null ? String(entry.coolSide) : '');
       setAmbient(entry.ambient != null ? String(entry.ambient) : '');
@@ -150,6 +168,7 @@ export default function AddLogScreen() {
       amount,
       shedQuality,
       poopQuality,
+      healthCategory,
       hotSide,
       coolSide,
       ambient,
@@ -350,6 +369,33 @@ export default function AddLogScreen() {
           </>
         ) : null}
 
+        {type === 'health' ? (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Category</Text>
+            <View style={styles.optionRow}>
+              {HEALTH_CATEGORIES.map((option) => {
+                const selected = healthCategory === option;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => setHealthCategory(option)}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: selected ? colors.tint : colors.card,
+                        borderColor: selected ? colors.tint : colors.border,
+                      },
+                    ]}>
+                    <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 13 }}>
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+
         {type === 'weight' ? (
           <>
             <FormField
@@ -385,10 +431,18 @@ export default function AddLogScreen() {
         ) : null}
 
         <FormField
-          label={type === 'note' ? 'Note' : 'Notes (optional)'}
+          label={
+            type === 'note' ? 'Note' : type === 'health' ? 'Details' : 'Notes (optional)'
+          }
           value={notes}
           onChangeText={setNotes}
-          placeholder={type === 'note' ? 'Write your note here...' : 'Additional details...'}
+          placeholder={
+            type === 'note'
+              ? 'Write your note here...'
+              : type === 'health'
+                ? 'Symptoms, treatment, vet notes...'
+                : 'Additional details...'
+          }
           multiline
         />
       </ScrollView>

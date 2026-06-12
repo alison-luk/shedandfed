@@ -10,9 +10,12 @@ import {
   View,
 } from 'react-native';
 
+import CareHealthSection from '@/components/CareHealthSection';
 import EmptyState from '@/components/EmptyState';
 import LastCareSummary from '@/components/LastCareSummary';
 import LogEntryCard from '@/components/LogEntryCard';
+import ReptileAvatar from '@/components/ReptileAvatar';
+import WeightDashboard from '@/components/WeightDashboard';
 import LogFilterBar, { type LogFilter } from '@/components/LogFilterBar';
 import LogQuickActions from '@/components/LogQuickActions';
 import { Text } from '@/components/Themed';
@@ -31,6 +34,7 @@ function buildFilterCounts(logs: LogEntry[]): Record<LogFilter, number> {
     shedding: 0,
     temperature: 0,
     weight: 0,
+    health: 0,
     note: 0,
   };
 
@@ -172,9 +176,7 @@ export default function ReptileDetailScreen() {
           styles.profileCard,
           { backgroundColor: colors.card, borderColor: colors.border },
         ]}>
-        <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
-          <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
-        </View>
+        <ReptileAvatar reptile={reptile} size={56} style={{ marginRight: 14 }} />
         <View style={styles.profileInfo}>
           <Text style={styles.name}>{reptile.name}</Text>
           <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
@@ -193,6 +195,9 @@ export default function ReptileDetailScreen() {
           ) : null}
         </View>
       </View>
+
+      <WeightDashboard reptileId={id} logs={logs} />
+      <CareHealthSection reptileId={id} logs={logs} />
 
       <LogQuickActions reptileId={id} />
 
@@ -302,19 +307,6 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 14,
-  },
-  avatarText: {
-    color: '#fff',
-    fontSize: 24,
-    fontWeight: '700',
   },
   profileInfo: {
     flex: 1,

@@ -26,6 +26,12 @@
     },
     "plugins": [
       "expo-notifications",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Shed & Fed to access your photos for reptile profile pictures."
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",

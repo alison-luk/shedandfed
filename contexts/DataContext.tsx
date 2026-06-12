@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import * as db from '@/lib/db';
+import { deleteReptilePhoto } from '@/lib/images';
 import { syncFeedingReminders } from '@/lib/notifications';
 import type {
   CreateLogInput,
@@ -78,6 +79,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
 
   const removeReptile = useCallback(
     async (id: string) => {
+      await deleteReptilePhoto(id);
       await db.deleteReptile(id);
       await refresh();
     },
