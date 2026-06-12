@@ -13,12 +13,14 @@ import {
   View,
 } from 'react-native';
 
-import DateTimeField from '@/components/DateTimeField';
+import DateField from '@/components/DateField';
 import FormField from '@/components/FormField';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
+import { toDateOnlyIso } from '@/lib/format';
+import { validateLogForm } from '@/lib/logValidation';
 import {
   HEALTH_CATEGORIES,
   LOG_TYPE_LABELS,
@@ -72,7 +74,7 @@ function buildLogPayload(
   return {
     reptileId,
     type,
-    date: date.toISOString(),
+    date: toDateOnlyIso(date),
     notes: fields.notes || undefined,
     food: type === 'feeding' ? fields.food : undefined,
     amount: type === 'feeding' ? fields.amount : undefined,
@@ -102,7 +104,11 @@ export default function AddLogScreen() {
   const [loadingEntry, setLoadingEntry] = useState(isEditing);
   const [type, setType] = useState<LogType>(initialType);
   const typeLocked = Boolean(typeParam) && !isEditing;
-  const [date, setDate] = useState(new Date());
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    return today;
+  });
   const [notes, setNotes] = useState('');
   const [food, setFood] = useState('');
   const [amount, setAmount] = useState('');
@@ -160,6 +166,21 @@ export default function AddLogScreen() {
 
   async function handleSave() {
     if (!id) return;
+
+    const validationError = validateLogForm({
+      type,
+      notes,
+      food,
+      amount,
+      hotSide,
+      coolSide,
+      ambient,
+      weight,
+    });
+    if (validationError) {
+      Alert.alert('Missing details', validationError);
+      return;
+    }
 
     const payload = buildLogPayload(id, type, date, {
       notes,
@@ -253,12 +274,22 @@ export default function AddLogScreen() {
           </View>
         )}
 
-        <DateTimeField value={date} onChange={setDate} />
+        <DateField value={date} onChange={setDate} />
 
         {type === 'feeding' ? (
           <>
-            <FormField label="Food" value={food} onChangeText={setFood} placeholder="e.g. Frozen mouse" />
-            <FormField label="Amount" value={amount} onChangeText={setAmount} placeholder="e.g. 1 medium" />
+            <FormField
+              label="Food (required if no amount)"
+              value={food}
+              onChangeText={setFood}
+              placeholder="e.g. Frozen mouse"
+            />
+            <FormField
+              label="Amount (required if no food)"
+              value={amount}
+              onChangeText={setAmount}
+              placeholder="e.g. 1 medium"
+            />
           </>
         ) : null}
 
@@ -318,6 +349,9 @@ export default function AddLogScreen() {
 
         {type === 'temperature' ? (
           <>
+            <Text style={[styles.sectionHint, { color: colors.textSecondary }]}>
+              Enter at least one temperature reading.
+            </Text>
             <FormField
               label={`Hot Side (${TEMPERATURE_UNIT})`}
               value={hotSide}
@@ -372,7 +406,7 @@ export default function AddLogScreen() {
         {type === 'weight' ? (
           <>
             <FormField
-              label="Weight"
+              label="Weight (required)"
               value={weight}
               onChangeText={setWeight}
               placeholder="e.g. 450"
@@ -405,7 +439,11 @@ export default function AddLogScreen() {
 
         <FormField
           label={
-            type === 'note' ? 'Note' : type === 'health' ? 'Details' : 'Notes (optional)'
+            type === 'note'
+              ? 'Note (required)'
+              : type === 'health'
+                ? 'Details (required)'
+                : 'Notes (optional)'
           }
           value={notes}
           onChangeText={setNotes}
@@ -450,6 +488,11 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
+  },
+  sectionHint: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
   },
   typeGrid: {
     flexDirection: 'row',

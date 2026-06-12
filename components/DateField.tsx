@@ -9,54 +9,39 @@ import { Platform, Pressable, StyleSheet } from 'react-native';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import { formatDate } from '@/lib/format';
 
-interface DateTimeFieldProps {
+interface DateFieldProps {
   value: Date;
   onChange: (date: Date) => void;
 }
 
-function openAndroidDateTimePicker(current: Date, onChange: (date: Date) => void) {
+function normalizeDateOnly(date: Date): Date {
+  const next = new Date(date);
+  next.setHours(12, 0, 0, 0);
+  return next;
+}
+
+function openAndroidDatePicker(current: Date, onChange: (date: Date) => void) {
   DateTimePickerAndroid.open({
     value: current,
     mode: 'date',
     onChange: (event: DateTimePickerEvent, selectedDate?: Date) => {
-      if (event.type !== 'set' || !selectedDate) {
-        return;
+      if (event.type === 'set' && selectedDate) {
+        onChange(normalizeDateOnly(selectedDate));
       }
-
-      const withDate = new Date(current);
-      withDate.setFullYear(
-        selectedDate.getFullYear(),
-        selectedDate.getMonth(),
-        selectedDate.getDate()
-      );
-
-      DateTimePickerAndroid.open({
-        value: withDate,
-        mode: 'time',
-        is24Hour: false,
-        onChange: (timeEvent: DateTimePickerEvent, selectedTime?: Date) => {
-          if (timeEvent.type !== 'set' || !selectedTime) {
-            return;
-          }
-
-          const next = new Date(withDate);
-          next.setHours(selectedTime.getHours(), selectedTime.getMinutes(), 0, 0);
-          onChange(next);
-        },
-      });
     },
   });
 }
 
-export default function DateTimeField({ value, onChange }: DateTimeFieldProps) {
+export default function DateField({ value, onChange }: DateFieldProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
   const [showIosPicker, setShowIosPicker] = useState(false);
 
   function handlePress() {
     if (Platform.OS === 'android') {
-      openAndroidDateTimePicker(value, onChange);
+      openAndroidDatePicker(value, onChange);
       return;
     }
 
@@ -65,28 +50,20 @@ export default function DateTimeField({ value, onChange }: DateTimeFieldProps) {
 
   return (
     <>
-      <Text style={[styles.label, { color: colors.textSecondary }]}>Date & Time</Text>
+      <Text style={[styles.label, { color: colors.textSecondary }]}>Date</Text>
       <Pressable
         onPress={handlePress}
         accessibilityRole="button"
-        accessibilityLabel="Choose date and time"
+        accessibilityLabel="Choose date"
         style={[styles.button, { backgroundColor: colors.card, borderColor: colors.border }]}>
         <MaterialIcons name="event" size={22} color={colors.tint} />
-        <Text style={styles.buttonText}>
-          {value.toLocaleString(undefined, {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-          })}
-        </Text>
+        <Text style={styles.buttonText}>{formatDate(value.toISOString())}</Text>
       </Pressable>
 
       {showIosPicker ? (
         <DateTimePicker
           value={value}
-          mode="datetime"
+          mode="date"
           display="spinner"
           onChange={(event: DateTimePickerEvent, selected) => {
             if (event.type === 'dismissed') {
@@ -95,7 +72,7 @@ export default function DateTimeField({ value, onChange }: DateTimeFieldProps) {
             }
 
             if (selected) {
-              onChange(selected);
+              onChange(normalizeDateOnly(selected));
             }
           }}
         />

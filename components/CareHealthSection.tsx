@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { formatDateTime } from '@/lib/format';
+import { formatDate } from '@/lib/format';
 import type { LogEntry } from '@/lib/types';
 
 interface CareHealthSectionProps {
@@ -45,7 +45,7 @@ export default function CareHealthSection({ reptileId, logs }: CareHealthSection
             <View style={styles.entryHeader}>
               <Text style={styles.entryCategory}>{entry.healthCategory ?? 'Health'}</Text>
               <Text style={[styles.entryDate, { color: colors.textSecondary }]}>
-                {formatDateTime(entry.date)}
+                {formatDate(entry.date)}
               </Text>
             </View>
             {entry.notes ? (

@@ -5,6 +5,13 @@ export function formatTemperature(value: number): string {
   return `${value}${TEMPERATURE_UNIT}`;
 }
 
+/** Store log dates at midday local time to avoid timezone day shifts. */
+export function toDateOnlyIso(date: Date): string {
+  const normalized = new Date(date);
+  normalized.setHours(12, 0, 0, 0);
+  return normalized.toISOString();
+}
+
 export function formatDate(iso: string): string {
   const date = new Date(iso);
   return date.toLocaleDateString(undefined, {
