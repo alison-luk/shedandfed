@@ -1,11 +1,12 @@
-import { SymbolView } from 'expo-symbols';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import LogTypeIcon from '@/components/LogTypeIcon';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { formatDateTime, formatLogSummary } from '@/lib/format';
-import { LOG_TYPE_ICONS, LOG_TYPE_LABELS, type LogEntry } from '@/lib/types';
+import { LOG_TYPE_LABELS, type LogEntry } from '@/lib/types';
 
 interface LogEntryCardProps {
   entry: LogEntry;
@@ -20,7 +21,7 @@ export default function LogEntryCard({ entry, reptileName, onDelete }: LogEntryC
   return (
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.iconWrap, { backgroundColor: colors.background }]}>
-        <SymbolView name={LOG_TYPE_ICONS[entry.type] as never} tintColor={colors.tint} size={22} />
+        <LogTypeIcon type={entry.type} size={22} color={colors.tint} />
       </View>
       <View style={styles.content}>
         <View style={styles.header}>
@@ -41,11 +42,7 @@ export default function LogEntryCard({ entry, reptileName, onDelete }: LogEntryC
       </View>
       {onDelete ? (
         <Pressable onPress={onDelete} hitSlop={8} style={styles.deleteButton}>
-          <SymbolView
-            name={{ ios: 'trash', android: 'delete', web: 'delete' } as never}
-            tintColor={colors.danger}
-            size={18}
-          />
+          <MaterialIcons name="delete-outline" size={20} color={colors.danger} />
         </Pressable>
       ) : null}
     </View>

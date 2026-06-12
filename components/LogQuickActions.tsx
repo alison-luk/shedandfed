@@ -1,11 +1,11 @@
 import { Link } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
+import LogTypeIcon from '@/components/LogTypeIcon';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { LOG_TYPE_ICONS, LOG_TYPE_LABELS, type LogType } from '@/lib/types';
+import { LOG_TYPE_LABELS, type LogType } from '@/lib/types';
 
 const QUICK_LOG_TYPES: LogType[] = ['feeding', 'shedding', 'temperature', 'weight', 'note'];
 
@@ -20,19 +20,15 @@ export default function LogQuickActions({ reptileId }: LogQuickActionsProps) {
   return (
     <View style={styles.wrapper}>
       <Text style={[styles.title, { color: colors.textSecondary }]}>Quick Log</Text>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.row}>
+      <View style={styles.grid}>
         {QUICK_LOG_TYPES.map((logType) => (
           <Link key={logType} href={`/reptile/${reptileId}/add-log?type=${logType}`} asChild>
-            <Pressable style={({ pressed }) => [styles.action, { opacity: pressed ? 0.75 : 1 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Log ${LOG_TYPE_LABELS[logType].toLowerCase()}`}
+              style={({ pressed }) => [styles.action, { opacity: pressed ? 0.75 : 1 }]}>
               <View style={[styles.iconCircle, { backgroundColor: colors.tint }]}>
-                <SymbolView
-                  name={LOG_TYPE_ICONS[logType] as never}
-                  tintColor="#fff"
-                  size={24}
-                />
+                <LogTypeIcon type={logType} size={26} color="#fff" />
               </View>
               <Text style={[styles.label, { color: colors.text }]} numberOfLines={1}>
                 {LOG_TYPE_LABELS[logType]}
@@ -40,43 +36,47 @@ export default function LogQuickActions({ reptileId }: LogQuickActionsProps) {
             </Pressable>
           </Link>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingBottom: 8,
+    paddingBottom: 12,
+    paddingHorizontal: 12,
   },
   title: {
     fontSize: 13,
     fontWeight: '600',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    paddingHorizontal: 16,
-    marginBottom: 10,
+    paddingHorizontal: 4,
+    marginBottom: 12,
   },
-  row: {
-    paddingHorizontal: 12,
-    gap: 4,
+  grid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   action: {
+    flex: 1,
     alignItems: 'center',
-    width: 72,
-    paddingHorizontal: 4,
+    maxWidth: 72,
+    minHeight: 88,
   },
   iconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 8,
   },
   label: {
     fontSize: 11,
     fontWeight: '600',
     textAlign: 'center',
+    width: '100%',
   },
 });

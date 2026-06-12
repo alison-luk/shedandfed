@@ -150,9 +150,7 @@ export default function ReptileDetailScreen() {
         </Text>
       </View>
 
-      {logs.length > 0 ? (
-        <LogFilterBar value={filter} onChange={setFilter} counts={filterCounts} />
-      ) : null}
+      <LogFilterBar value={filter} onChange={setFilter} counts={filterCounts} />
     </>
   );
 

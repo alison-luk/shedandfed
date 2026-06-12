@@ -1,6 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import LogTypeIcon from '@/components/LogTypeIcon';
 import { useState } from 'react';
 import {
   Alert,
@@ -17,12 +18,7 @@ import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
-import {
-  LOG_TYPE_ICONS,
-  LOG_TYPE_LABELS,
-  type LogType,
-  type WeightUnit,
-} from '@/lib/types';
+import { LOG_TYPE_LABELS, type LogType, type WeightUnit } from '@/lib/types';
 
 const LOG_TYPES: LogType[] = ['feeding', 'shedding', 'temperature', 'weight', 'note'];
 
@@ -122,10 +118,10 @@ export default function AddLogScreen() {
                         borderColor: selected ? colors.tint : colors.border,
                       },
                     ]}>
-                    <SymbolView
-                      name={LOG_TYPE_ICONS[logType] as never}
-                      tintColor={selected ? '#fff' : colors.tint}
+                    <LogTypeIcon
+                      type={logType}
                       size={18}
+                      color={selected ? '#fff' : colors.tint}
                     />
                     <Text style={[styles.typeChipText, { color: selected ? '#fff' : colors.text }]}>
                       {LOG_TYPE_LABELS[logType]}
@@ -137,7 +133,7 @@ export default function AddLogScreen() {
           </>
         ) : (
           <View style={[styles.typeBanner, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <SymbolView name={LOG_TYPE_ICONS[type] as never} tintColor={colors.tint} size={22} />
+            <LogTypeIcon type={type} size={22} color={colors.tint} />
             <Text style={styles.typeBannerText}>{LOG_TYPE_LABELS[type]}</Text>
           </View>
         )}
@@ -146,11 +142,7 @@ export default function AddLogScreen() {
         <Pressable
           onPress={() => setShowDatePicker(true)}
           style={[styles.dateButton, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <SymbolView
-            name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as never}
-            tintColor={colors.tint}
-            size={20}
-          />
+          <MaterialIcons name="event" size={22} color={colors.tint} />
           <Text style={styles.dateText}>
             {date.toLocaleString(undefined, {
               month: 'short',
