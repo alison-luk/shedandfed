@@ -10,12 +10,10 @@ import {
   View,
 } from 'react-native';
 
-import CareHealthSection from '@/components/CareHealthSection';
 import EmptyState from '@/components/EmptyState';
 import LastCareSummary from '@/components/LastCareSummary';
 import LogEntryCard from '@/components/LogEntryCard';
 import ReptileAvatar from '@/components/ReptileAvatar';
-import WeightDashboard from '@/components/WeightDashboard';
 import LogFilterBar, { type LogFilter } from '@/components/LogFilterBar';
 import LogQuickActions from '@/components/LogQuickActions';
 import { Text } from '@/components/Themed';
@@ -171,10 +169,17 @@ export default function ReptileDetailScreen() {
 
   const listHeader = (
     <>
-      <View
-        style={[
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Open dashboard and health for ${reptile.name}`}
+        onPress={() => router.push(`/reptile/${id}/dashboard`)}
+        style={({ pressed }) => [
           styles.profileCard,
-          { backgroundColor: colors.card, borderColor: colors.border },
+          {
+            backgroundColor: colors.card,
+            borderColor: colors.border,
+            opacity: pressed ? 0.92 : 1,
+          },
         ]}>
         <ReptileAvatar reptile={reptile} size={56} style={{ marginRight: 14 }} />
         <View style={styles.profileInfo}>
@@ -193,11 +198,12 @@ export default function ReptileDetailScreen() {
           {reptile.notes ? (
             <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
           ) : null}
+          <Text style={[styles.dashboardLink, { color: colors.tint }]}>
+            Dashboard & health
+          </Text>
         </View>
-      </View>
-
-      <WeightDashboard reptileId={id} logs={logs} />
-      <CareHealthSection reptileId={id} logs={logs} />
+        <MaterialIcons name="chevron-right" size={24} color={colors.textSecondary} />
+      </Pressable>
 
       <LogQuickActions reptileId={id} />
 
@@ -307,6 +313,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 14,
     borderWidth: 1,
+  },
+  dashboardLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 8,
   },
   profileInfo: {
     flex: 1,

@@ -90,6 +90,10 @@ function RootLayoutNav() {
           options={{ title: 'Edit Reptile', presentation: 'modal' }}
         />
         <Stack.Screen name="reptile/[id]" options={{ title: 'Reptile' }} />
+        <Stack.Screen
+          name="reptile/[id]/dashboard"
+          options={{ title: 'Dashboard' }}
+        />
       </Stack>
     </ThemeProvider>
   );
