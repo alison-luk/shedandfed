@@ -23,13 +23,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const [nextReptiles, nextLogs] = await Promise.all([db.getReptiles(), db.getRecentLogs()]);
+    const nextReptiles = await db.getReptiles();
+    const nextLogs = await db.getRecentLogs();
     setReptiles(nextReptiles);
     setRecentLogs(nextLogs);
   }, []);
 
   useEffect(() => {
-    refresh().finally(() => setLoading(false));
+    db.initDatabase()
+      .then(() => refresh())
+      .catch((error) => {
+        console.error('Failed to initialize database', error);
+      })
+      .finally(() => setLoading(false));
   }, [refresh]);
 
   const addReptile = useCallback(

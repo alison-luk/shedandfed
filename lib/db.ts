@@ -5,19 +5,43 @@ import type { CreateLogInput, CreateReptileInput, LogEntry, Reptile } from './ty
 const DATABASE_NAME = 'shedandfed.db';
 
 let database: SQLite.SQLiteDatabase | null = null;
+let initPromise: Promise<SQLite.SQLiteDatabase> | null = null;
+let operationChain: Promise<unknown> = Promise.resolve();
+
+function enqueue<T>(operation: () => Promise<T>): Promise<T> {
+  const result = operationChain.then(operation, operation);
+  operationChain = result.then(
+    () => undefined,
+    () => undefined
+  );
+  return result;
+}
+
+async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
+  const db = await SQLite.openDatabaseAsync(DATABASE_NAME);
+  await initializeSchema(db);
+  database = db;
+  return db;
+}
 
 async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-  if (!database) {
-    database = await SQLite.openDatabaseAsync(DATABASE_NAME);
-    await initializeSchema(database);
+  if (database) {
+    return database;
   }
-  return database;
+
+  if (!initPromise) {
+    initPromise = openDatabase();
+  }
+
+  return initPromise;
+}
+
+export async function initDatabase(): Promise<void> {
+  await getDatabase();
 }
 
 async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
   await db.execAsync(`
-    PRAGMA journal_mode = WAL;
-
     CREATE TABLE IF NOT EXISTS reptiles (
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
@@ -25,7 +49,9 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       notes TEXT,
       created_at TEXT NOT NULL
     );
+  `);
 
+  await db.execAsync(`
     CREATE TABLE IF NOT EXISTS log_entries (
       id TEXT PRIMARY KEY NOT NULL,
       reptile_id TEXT NOT NULL,
@@ -42,10 +68,12 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       weight_unit TEXT,
       FOREIGN KEY (reptile_id) REFERENCES reptiles(id) ON DELETE CASCADE
     );
-
-    CREATE INDEX IF NOT EXISTS idx_log_entries_reptile_id ON log_entries(reptile_id);
-    CREATE INDEX IF NOT EXISTS idx_log_entries_date ON log_entries(date DESC);
   `);
+
+  await db.execAsync(
+    'CREATE INDEX IF NOT EXISTS idx_log_entries_reptile_id ON log_entries(reptile_id);'
+  );
+  await db.execAsync('CREATE INDEX IF NOT EXISTS idx_log_entries_date ON log_entries(date);');
 }
 
 function generateId(): string {
@@ -80,117 +108,133 @@ function mapLogEntry(row: Record<string, unknown>): LogEntry {
   };
 }
 
-export async function getReptiles(): Promise<Reptile[]> {
-  const db = await getDatabase();
-  const rows = await db.getAllAsync<Record<string, unknown>>(
-    'SELECT * FROM reptiles ORDER BY name COLLATE NOCASE ASC'
-  );
-  return rows.map(mapReptile);
+export function getReptiles(): Promise<Reptile[]> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<Record<string, unknown>>(
+      'SELECT * FROM reptiles ORDER BY name COLLATE NOCASE ASC'
+    );
+    return rows.map(mapReptile);
+  });
 }
 
-export async function getReptile(id: string): Promise<Reptile | null> {
-  const db = await getDatabase();
-  const row = await db.getFirstAsync<Record<string, unknown>>(
-    'SELECT * FROM reptiles WHERE id = ?',
-    [id]
-  );
-  return row ? mapReptile(row) : null;
+export function getReptile(id: string): Promise<Reptile | null> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<Record<string, unknown>>(
+      'SELECT * FROM reptiles WHERE id = ?',
+      [id]
+    );
+    return row ? mapReptile(row) : null;
+  });
 }
 
-export async function createReptile(input: CreateReptileInput): Promise<Reptile> {
-  const db = await getDatabase();
-  const reptile: Reptile = {
-    id: generateId(),
-    name: input.name.trim(),
-    species: input.species.trim(),
-    notes: input.notes?.trim() || null,
-    createdAt: new Date().toISOString(),
-  };
+export function createReptile(input: CreateReptileInput): Promise<Reptile> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const reptile: Reptile = {
+      id: generateId(),
+      name: input.name.trim(),
+      species: input.species.trim(),
+      notes: input.notes?.trim() || null,
+      createdAt: new Date().toISOString(),
+    };
 
-  await db.runAsync(
-    'INSERT INTO reptiles (id, name, species, notes, created_at) VALUES (?, ?, ?, ?, ?)',
-    [reptile.id, reptile.name, reptile.species, reptile.notes, reptile.createdAt]
-  );
+    await db.runAsync(
+      'INSERT INTO reptiles (id, name, species, notes, created_at) VALUES (?, ?, ?, ?, ?)',
+      [reptile.id, reptile.name, reptile.species, reptile.notes, reptile.createdAt]
+    );
 
-  return reptile;
+    return reptile;
+  });
 }
 
-export async function deleteReptile(id: string): Promise<void> {
-  const db = await getDatabase();
-  await db.runAsync('DELETE FROM log_entries WHERE reptile_id = ?', [id]);
-  await db.runAsync('DELETE FROM reptiles WHERE id = ?', [id]);
+export function deleteReptile(id: string): Promise<void> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    await db.runAsync('DELETE FROM log_entries WHERE reptile_id = ?', [id]);
+    await db.runAsync('DELETE FROM reptiles WHERE id = ?', [id]);
+  });
 }
 
-export async function getLogsForReptile(reptileId: string): Promise<LogEntry[]> {
-  const db = await getDatabase();
-  const rows = await db.getAllAsync<Record<string, unknown>>(
-    'SELECT * FROM log_entries WHERE reptile_id = ? ORDER BY date DESC',
-    [reptileId]
-  );
-  return rows.map(mapLogEntry);
+export function getLogsForReptile(reptileId: string): Promise<LogEntry[]> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<Record<string, unknown>>(
+      'SELECT * FROM log_entries WHERE reptile_id = ? ORDER BY date DESC',
+      [reptileId]
+    );
+    return rows.map(mapLogEntry);
+  });
 }
 
-export async function getRecentLogs(limit = 50): Promise<(LogEntry & { reptileName: string })[]> {
-  const db = await getDatabase();
-  const rows = await db.getAllAsync<Record<string, unknown>>(
-    `SELECT log_entries.*, reptiles.name AS reptile_name
-     FROM log_entries
-     JOIN reptiles ON reptiles.id = log_entries.reptile_id
-     ORDER BY log_entries.date DESC
-     LIMIT ?`,
-    [limit]
-  );
+export function getRecentLogs(limit = 50): Promise<(LogEntry & { reptileName: string })[]> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const rows = await db.getAllAsync<Record<string, unknown>>(
+      `SELECT log_entries.*, reptiles.name AS reptile_name
+       FROM log_entries
+       JOIN reptiles ON reptiles.id = log_entries.reptile_id
+       ORDER BY log_entries.date DESC
+       LIMIT ?`,
+      [limit]
+    );
 
-  return rows.map((row) => ({
-    ...mapLogEntry(row),
-    reptileName: row.reptile_name as string,
-  }));
+    return rows.map((row) => ({
+      ...mapLogEntry(row),
+      reptileName: row.reptile_name as string,
+    }));
+  });
 }
 
-export async function createLog(input: CreateLogInput): Promise<LogEntry> {
-  const db = await getDatabase();
-  const entry: LogEntry = {
-    id: generateId(),
-    reptileId: input.reptileId,
-    type: input.type,
-    date: input.date,
-    notes: input.notes?.trim() || null,
-    food: input.food?.trim() || null,
-    amount: input.amount?.trim() || null,
-    shedQuality: input.shedQuality?.trim() || null,
-    hotSide: input.hotSide ?? null,
-    coolSide: input.coolSide ?? null,
-    ambient: input.ambient ?? null,
-    weight: input.weight ?? null,
-    weightUnit: input.weightUnit ?? null,
-  };
+export function createLog(input: CreateLogInput): Promise<LogEntry> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const entry: LogEntry = {
+      id: generateId(),
+      reptileId: input.reptileId,
+      type: input.type,
+      date: input.date,
+      notes: input.notes?.trim() || null,
+      food: input.food?.trim() || null,
+      amount: input.amount?.trim() || null,
+      shedQuality: input.shedQuality?.trim() || null,
+      hotSide: input.hotSide ?? null,
+      coolSide: input.coolSide ?? null,
+      ambient: input.ambient ?? null,
+      weight: input.weight ?? null,
+      weightUnit: input.weightUnit ?? null,
+    };
 
-  await db.runAsync(
-    `INSERT INTO log_entries (
-      id, reptile_id, type, date, notes, food, amount, shed_quality,
-      hot_side, cool_side, ambient, weight, weight_unit
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      entry.id,
-      entry.reptileId,
-      entry.type,
-      entry.date,
-      entry.notes,
-      entry.food,
-      entry.amount,
-      entry.shedQuality,
-      entry.hotSide,
-      entry.coolSide,
-      entry.ambient,
-      entry.weight,
-      entry.weightUnit,
-    ]
-  );
+    await db.runAsync(
+      `INSERT INTO log_entries (
+        id, reptile_id, type, date, notes, food, amount, shed_quality,
+        hot_side, cool_side, ambient, weight, weight_unit
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        entry.id,
+        entry.reptileId,
+        entry.type,
+        entry.date,
+        entry.notes,
+        entry.food,
+        entry.amount,
+        entry.shedQuality,
+        entry.hotSide,
+        entry.coolSide,
+        entry.ambient,
+        entry.weight,
+        entry.weightUnit,
+      ]
+    );
 
-  return entry;
+    return entry;
+  });
 }
 
-export async function deleteLog(id: string): Promise<void> {
-  const db = await getDatabase();
-  await db.runAsync('DELETE FROM log_entries WHERE id = ?', [id]);
+export function deleteLog(id: string): Promise<void> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    await db.runAsync('DELETE FROM log_entries WHERE id = ?', [id]);
+  });
 }
