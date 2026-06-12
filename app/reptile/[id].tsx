@@ -146,34 +146,24 @@ export default function ReptileDetailScreen() {
 
   const listHeader = (
     <>
-      <Link href={`/reptile/${id}/edit`} asChild>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`View and edit ${reptile.name}`}
-          style={({ pressed }) => [
-            styles.profileCard,
-            {
-              backgroundColor: colors.card,
-              borderColor: colors.border,
-              opacity: pressed ? 0.92 : 1,
-            },
-          ]}>
-          <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
-            <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
-          </View>
-          <View style={styles.profileInfo}>
-            <Text style={styles.name}>{reptile.name}</Text>
-            <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
-            {reptile.notes ? (
-              <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
-            ) : null}
-            <Text style={[styles.editHint, { color: colors.tint }]}>Tap to view or edit</Text>
-          </View>
-          <MaterialIcons name="chevron-right" size={22} color={colors.textSecondary} />
-        </Pressable>
-      </Link>
+      <View
+        style={[
+          styles.profileCard,
+          { backgroundColor: colors.card, borderColor: colors.border },
+        ]}>
+        <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
+          <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
+        </View>
+        <View style={styles.profileInfo}>
+          <Text style={styles.name}>{reptile.name}</Text>
+          <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
+          {reptile.notes ? (
+            <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
+          ) : null}
+        </View>
+      </View>
 
-      <LogQuickActions reptileId={id} />
+      <LogQuickActions reptileId={id} onLogAdded={loadData} />
 
       <View style={styles.logHeader}>
         <Text style={styles.logTitle}>Care Log</Text>
@@ -234,7 +224,7 @@ export default function ReptileDetailScreen() {
           logs.length === 0 ? (
             <EmptyState
               title="No logs yet"
-              message="Tap a quick log icon above to record feedings, sheds, temperatures, weight, or notes."
+              message="Tap a quick log icon above to record feedings, poop, sheds, temperatures, weight, or notes."
             />
           ) : (
             <EmptyState
@@ -311,11 +301,6 @@ const styles = StyleSheet.create({
   notes: {
     fontSize: 14,
     lineHeight: 20,
-  },
-  editHint: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 8,
   },
   logHeader: {
     flexDirection: 'row',
