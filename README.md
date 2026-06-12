@@ -58,7 +58,7 @@ constants/            # Theme colors
 
 ## Tech Stack
 
-- **Expo SDK 56** + **React Native**
+- **Expo SDK 54** + **React Native** (compatible with Expo Go from the App Store / Play Store)
 - **Expo Router** for navigation
 - **expo-sqlite** for on-device persistence
 - **TypeScript**

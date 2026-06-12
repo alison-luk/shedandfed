@@ -100,7 +100,7 @@ export default function ReptileDetailScreen() {
           headerRight: () => (
             <Pressable onPress={handleDeleteReptile} style={styles.headerButton}>
               <SymbolView
-                name={{ ios: 'trash', android: 'delete', web: 'delete' }}
+                name={{ ios: 'trash', android: 'delete', web: 'delete' } as never}
                 tintColor={colors.danger}
                 size={22}
               />
@@ -126,7 +126,7 @@ export default function ReptileDetailScreen() {
         <Link href={`/reptile/${id}/add-log`} asChild>
           <Pressable style={[styles.logButton, { backgroundColor: colors.tint }]}>
             <SymbolView
-              name={{ ios: 'plus', android: 'add', web: 'add' }}
+              name={{ ios: 'plus', android: 'add', web: 'add' } as never}
               tintColor="#fff"
               size={18}
             />

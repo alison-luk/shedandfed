@@ -30,7 +30,7 @@ export default function ReptileCard({ reptile }: ReptileCardProps) {
           <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
         </View>
         <SymbolView
-          name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+          name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as never}
           tintColor={colors.textSecondary}
           size={18}
         />

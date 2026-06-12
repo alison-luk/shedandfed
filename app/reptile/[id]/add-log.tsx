@@ -127,7 +127,7 @@ export default function AddLogScreen() {
           onPress={() => setShowDatePicker(true)}
           style={[styles.dateButton, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <SymbolView
-            name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' }}
+            name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' } as never}
             tintColor={colors.tint}
             size={20}
           />

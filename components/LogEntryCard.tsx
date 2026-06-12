@@ -42,7 +42,7 @@ export default function LogEntryCard({ entry, reptileName, onDelete }: LogEntryC
       {onDelete ? (
         <Pressable onPress={onDelete} hitSlop={8} style={styles.deleteButton}>
           <SymbolView
-            name={{ ios: 'trash', android: 'delete', web: 'delete' }}
+            name={{ ios: 'trash', android: 'delete', web: 'delete' } as never}
             tintColor={colors.danger}
             size={18}
           />

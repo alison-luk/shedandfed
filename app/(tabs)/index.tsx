@@ -22,7 +22,7 @@ export default function ReptilesScreen() {
               <Pressable style={styles.addButton}>
                 {({ pressed }) => (
                   <SymbolView
-                    name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' }}
+                    name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as never}
                     tintColor={colors.tint}
                     size={28}
                     style={{ opacity: pressed ? 0.6 : 1 }}
@@ -54,7 +54,7 @@ export default function ReptilesScreen() {
         <Link href="/reptile/add" asChild>
           <Pressable style={[styles.fab, { backgroundColor: colors.tint }]}>
             <SymbolView
-              name={{ ios: 'plus', android: 'add', web: 'add' }}
+              name={{ ios: 'plus', android: 'add', web: 'add' } as never}
               tintColor="#fff"
               size={28}
             />

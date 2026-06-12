@@ -28,7 +28,7 @@ export default function TabLayout() {
           title: 'My Reptiles',
           tabBarIcon: ({ color }) => (
             <SymbolView
-              name={{ ios: 'lizard', android: 'pets', web: 'pets' }}
+              name={{ ios: 'lizard', android: 'pets', web: 'pets' } as never}
               tintColor={color}
               size={26}
             />
@@ -41,7 +41,7 @@ export default function TabLayout() {
           title: 'Activity',
           tabBarIcon: ({ color }) => (
             <SymbolView
-              name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' }}
+              name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' } as never}
               tintColor={color}
               size={26}
             />
