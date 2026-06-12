@@ -1,6 +1,5 @@
 import { SymbolView } from 'expo-symbols';
 import { Tabs } from 'expo-router';
-import { Platform } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -17,17 +16,10 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
-          height: Platform.OS === 'ios' ? 88 : 72,
-          paddingTop: 8,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
         },
         tabBarLabelStyle: {
-          fontSize: 13,
+          fontSize: 12,
           fontWeight: '600',
-          marginTop: 2,
-        },
-        tabBarIconStyle: {
-          marginTop: 2,
         },
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
@@ -42,7 +34,7 @@ export default function TabLayout() {
             <SymbolView
               name={{ ios: 'lizard', android: 'pets', web: 'pets' } as never}
               tintColor={color}
-              size={30}
+              size={26}
             />
           ),
         }}
@@ -56,7 +48,7 @@ export default function TabLayout() {
             <SymbolView
               name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' } as never}
               tintColor={color}
-              size={30}
+              size={26}
             />
           ),
         }}

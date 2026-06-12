@@ -7,11 +7,13 @@ import ReptileCard from '@/components/ReptileCard';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
+import { useBottomTabOffset } from '@/lib/layout';
 
 export default function ReptilesScreen() {
   const { reptiles, loading } = useData();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const fabBottom = useBottomTabOffset();
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -47,14 +49,14 @@ export default function ReptilesScreen() {
         <FlatList
           data={reptiles}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: fabBottom + 56 }]}
           renderItem={({ item }) => <ReptileCard reptile={item} />}
         />
       )}
 
       {!loading ? (
         <Link href="/reptile/add" asChild>
-          <Pressable style={[styles.fab, { backgroundColor: colors.tint }]}>
+          <Pressable style={[styles.fab, { backgroundColor: colors.tint, bottom: fabBottom }]}>
             <SymbolView
               name={{ ios: 'plus', android: 'add', web: 'add' } as never}
               tintColor="#fff"
@@ -76,7 +78,6 @@ const styles = StyleSheet.create({
   },
   list: {
     padding: 16,
-    paddingBottom: 88,
   },
   addButton: {
     marginRight: 16,
@@ -84,7 +85,6 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
