@@ -19,7 +19,7 @@ import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
-import { LOG_TYPE_LABELS, type LogType, type WeightUnit } from '@/lib/types';
+import { LOG_TYPE_LABELS, TEMPERATURE_UNIT, type LogType, type WeightUnit } from '@/lib/types';
 
 const LOG_TYPES: LogType[] = ['feeding', 'shedding', 'temperature', 'weight', 'poop', 'note'];
 
@@ -314,21 +314,21 @@ export default function AddLogScreen() {
         {type === 'temperature' ? (
           <>
             <FormField
-              label="Hot Side (°F)"
+              label={`Hot Side (${TEMPERATURE_UNIT})`}
               value={hotSide}
               onChangeText={setHotSide}
-              placeholder="e.g. 88"
+              placeholder="e.g. 32"
               keyboardType="decimal-pad"
             />
             <FormField
-              label="Cool Side (°F)"
+              label={`Cool Side (${TEMPERATURE_UNIT})`}
               value={coolSide}
               onChangeText={setCoolSide}
-              placeholder="e.g. 75"
+              placeholder="e.g. 24"
               keyboardType="decimal-pad"
             />
             <FormField
-              label="Ambient (°F)"
+              label={`Ambient (${TEMPERATURE_UNIT})`}
               value={ambient}
               onChangeText={setAmbient}
               placeholder="Optional"

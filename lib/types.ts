@@ -60,10 +60,22 @@ export interface UpdateLogInput extends CreateLogInput {
   id: string;
 }
 
+export const TEMPERATURE_UNIT = '°C';
+
 export const LOG_TYPE_LABELS: Record<LogType, string> = {
   feeding: 'Feeding',
   shedding: 'Shedding',
-  temperature: 'Temperature',
+  temperature: `Temperature (${TEMPERATURE_UNIT})`,
+  weight: 'Weight',
+  poop: 'Poop',
+  note: 'Note',
+};
+
+/** Shorter labels for the quick-log grid so text stays centred under each icon. */
+export const QUICK_LOG_LABELS: Record<LogType, string> = {
+  feeding: 'Feeding',
+  shedding: 'Shedding',
+  temperature: `Temp ${TEMPERATURE_UNIT}`,
   weight: 'Weight',
   poop: 'Poop',
   note: 'Note',

@@ -1,5 +1,9 @@
 import type { LogEntry } from './types';
-import { LOG_TYPE_LABELS } from './types';
+import { LOG_TYPE_LABELS, TEMPERATURE_UNIT } from './types';
+
+export function formatTemperature(value: number): string {
+  return `${value}${TEMPERATURE_UNIT}`;
+}
 
 export function formatDate(iso: string): string {
   const date = new Date(iso);
@@ -74,9 +78,9 @@ export function formatLogDetails(entry: LogEntry): LogDetailLine[] {
       if (entry.poopQuality) lines.push({ label: 'Quality', value: entry.poopQuality });
       break;
     case 'temperature':
-      if (entry.hotSide != null) lines.push({ label: 'Hot side', value: `${entry.hotSide}°F` });
-      if (entry.coolSide != null) lines.push({ label: 'Cool side', value: `${entry.coolSide}°F` });
-      if (entry.ambient != null) lines.push({ label: 'Ambient', value: `${entry.ambient}°F` });
+      if (entry.hotSide != null) lines.push({ label: 'Hot side', value: formatTemperature(entry.hotSide) });
+      if (entry.coolSide != null) lines.push({ label: 'Cool side', value: formatTemperature(entry.coolSide) });
+      if (entry.ambient != null) lines.push({ label: 'Ambient', value: formatTemperature(entry.ambient) });
       break;
     case 'weight':
       if (entry.weight != null) {
