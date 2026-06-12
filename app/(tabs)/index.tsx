@@ -1,10 +1,11 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link, Stack } from 'expo-router';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
-import AddReptileButton from '@/components/AddReptileButton';
 import EmptyState from '@/components/EmptyState';
 import ReptileCard from '@/components/ReptileCard';
+import SearchField from '@/components/SearchField';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -15,7 +16,14 @@ export default function ReptilesScreen() {
   const { reptiles, loading } = useData();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const tabOffset = useBottomTabOffset(8);
+  const tabOffset = useBottomTabOffset(16);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredReptiles = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return reptiles;
+    return reptiles.filter((reptile) => reptile.name.toLowerCase().includes(query));
+  }, [reptiles, searchQuery]);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -53,36 +61,31 @@ export default function ReptilesScreen() {
       {loading ? (
         <ActivityIndicator style={styles.loader} color={colors.tint} />
       ) : reptiles.length === 0 ? (
-        <View style={[styles.emptyWrap, { paddingBottom: tabOffset + 80 }]}>
+        <View style={[styles.emptyWrap, { paddingBottom: tabOffset }]}>
           <EmptyState
             title="No reptiles yet"
-            message="Add your first reptile to start tracking feedings, sheds, temperatures, and more."
+            message="Tap Add in the top right to add your first reptile and start tracking care."
           />
-          <AddReptileButton label="Add your first reptile" variant="inline" />
         </View>
       ) : (
         <FlatList
-          data={reptiles}
+          data={filteredReptiles}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.list, { paddingBottom: tabOffset + 80 }]}
+          numColumns={3}
+          contentContainerStyle={[styles.list, { paddingBottom: tabOffset }]}
+          columnWrapperStyle={styles.row}
+          ListHeaderComponent={
+            <SearchField value={searchQuery} onChangeText={setSearchQuery} />
+          }
           renderItem={({ item }) => <ReptileCard reptile={item} />}
-          ListFooterComponent={
-            <View style={styles.footer}>
-              <AddReptileButton label="Add another reptile" variant="inline" />
-            </View>
+          ListEmptyComponent={
+            <EmptyState
+              title="No matches"
+              message={`No reptiles found for "${searchQuery.trim()}".`}
+            />
           }
         />
       )}
-
-      {!loading ? (
-        <View
-          style={[
-            styles.stickyBar,
-            { bottom: tabOffset, backgroundColor: colors.background, borderTopColor: colors.border },
-          ]}>
-          <AddReptileButton label="Add Reptile" variant="bar" />
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -98,16 +101,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
-    gap: 24,
   },
   list: {
-    padding: 16,
     paddingTop: 8,
+    paddingHorizontal: 10,
   },
-  footer: {
-    marginTop: 8,
-    marginBottom: 16,
-    width: '100%',
+  row: {
+    justifyContent: 'flex-start',
   },
   headerAdd: {
     flexDirection: 'row',
@@ -120,12 +120,5 @@ const styles = StyleSheet.create({
   headerAddText: {
     fontSize: 17,
     fontWeight: '600',
-  },
-  stickyBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    paddingTop: 8,
-    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });

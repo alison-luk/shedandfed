@@ -15,48 +15,52 @@ export default function ReptileCard({ reptile }: ReptileCardProps) {
   const colors = Colors[colorScheme];
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+    <View style={styles.wrapper}>
       <Link href={`/reptile/${reptile.id}`} asChild>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Open ${reptile.name}`}
-          style={({ pressed }) => [
-            styles.avatar,
-            { backgroundColor: colors.tint, opacity: pressed ? 0.85 : 1 },
-          ]}>
-          <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
+          style={({ pressed }) => [styles.pressable, { opacity: pressed ? 0.85 : 1 }]}>
+          <View style={[styles.avatar, { backgroundColor: colors.tint, borderColor: colors.card }]}>
+            <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
+          </View>
+          <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>
+            {reptile.name}
+          </Text>
         </Pressable>
       </Link>
-      <Text style={styles.name}>{reptile.name}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    flexDirection: 'row',
+  wrapper: {
+    flex: 1,
+    maxWidth: '33.33%',
+    paddingHorizontal: 6,
+    marginBottom: 20,
+  },
+  pressable: {
     alignItems: 'center',
-    padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 12,
-    gap: 14,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 3,
+    marginBottom: 8,
   },
   avatarText: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 28,
     fontWeight: '700',
   },
   name: {
-    flex: 1,
-    fontSize: 17,
+    fontSize: 13,
     fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 17,
   },
 });
