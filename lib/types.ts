@@ -65,7 +65,7 @@ export const TEMPERATURE_UNIT = '°C';
 export const LOG_TYPE_LABELS: Record<LogType, string> = {
   feeding: 'Feeding',
   shedding: 'Shedding',
-  temperature: `Temperature (${TEMPERATURE_UNIT})`,
+  temperature: 'Temperature',
   weight: 'Weight',
   poop: 'Poop',
   note: 'Note',
@@ -74,8 +74,8 @@ export const LOG_TYPE_LABELS: Record<LogType, string> = {
 /** Shorter labels for the quick-log grid so text stays centred under each icon. */
 export const QUICK_LOG_LABELS: Record<LogType, string> = {
   feeding: 'Feeding',
-  shedding: 'Shedding',
-  temperature: `Temp ${TEMPERATURE_UNIT}`,
+  shedding: 'Shed',
+  temperature: 'Temp',
   weight: 'Weight',
   poop: 'Poop',
   note: 'Note',

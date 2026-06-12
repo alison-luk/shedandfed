@@ -163,7 +163,7 @@ export default function ReptileDetailScreen() {
         </View>
       </View>
 
-      <LogQuickActions reptileId={id} onLogAdded={loadData} />
+      <LogQuickActions reptileId={id} />
 
       <View style={styles.logHeader}>
         <Text style={styles.logTitle}>Care Log</Text>
