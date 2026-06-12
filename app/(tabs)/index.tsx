@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   footer: {
     marginTop: 8,
     marginBottom: 16,
-    alignItems: 'center',
+    width: '100%',
   },
   headerAdd: {
     flexDirection: 'row',

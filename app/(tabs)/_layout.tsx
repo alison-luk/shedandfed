@@ -55,7 +55,7 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'My Reptiles',
-          tabBarLabel: 'Reptiles',
+          tabBarLabel: 'My Reptiles',
           tabBarAccessibilityLabel: 'My Reptiles tab',
           tabBarIcon: ({ color, focused }) => (
             <MaterialIcons name={focused ? 'pets' : 'pets'} size={28} color={color} />

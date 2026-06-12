@@ -1,5 +1,5 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Text } from '@/components/Themed';
@@ -27,13 +27,8 @@ export default function ReptileCard({ reptile }: ReptileCardProps) {
         </View>
         <View style={styles.content}>
           <Text style={styles.name}>{reptile.name}</Text>
-          <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
         </View>
-        <SymbolView
-          name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' } as never}
-          tintColor={colors.textSecondary}
-          size={18}
-        />
+        <MaterialIcons name="chevron-right" size={22} color={colors.textSecondary} />
       </Pressable>
     </Link>
   );
@@ -67,9 +62,5 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 17,
     fontWeight: '600',
-    marginBottom: 2,
-  },
-  species: {
-    fontSize: 14,
   },
 });

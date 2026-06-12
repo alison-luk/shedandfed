@@ -4,8 +4,8 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  FlatList,
   Pressable,
-  SectionList,
   StyleSheet,
   View,
 } from 'react-native';
@@ -14,12 +14,10 @@ import EmptyState from '@/components/EmptyState';
 import LogEntryCard from '@/components/LogEntryCard';
 import LogFilterBar, { type LogFilter } from '@/components/LogFilterBar';
 import LogQuickActions from '@/components/LogQuickActions';
-import SectionHeader from '@/components/SectionHeader';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
-import { groupLogsByDate } from '@/lib/format';
 import type { LogEntry, Reptile } from '@/lib/types';
 
 function buildFilterCounts(logs: LogEntry[]): Record<LogFilter, number> {
@@ -80,8 +78,6 @@ export default function ReptileDetailScreen() {
     [logs, filter]
   );
 
-  const sections = useMemo(() => groupLogsByDate(filteredLogs), [filteredLogs]);
-
   function handleDeleteReptile() {
     Alert.alert(
       'Delete reptile?',
@@ -138,7 +134,8 @@ export default function ReptileDetailScreen() {
           <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
         </View>
         <View style={styles.profileInfo}>
-          <Text style={styles.species}>{reptile.species}</Text>
+          <Text style={styles.name}>{reptile.name}</Text>
+          <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
           {reptile.notes ? (
             <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
           ) : null}
@@ -180,13 +177,11 @@ export default function ReptileDetailScreen() {
         }}
       />
 
-      <SectionList
-        sections={sections}
+      <FlatList
+        data={filteredLogs}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         ListHeaderComponent={listHeader}
-        stickySectionHeadersEnabled
-        renderSectionHeader={({ section }) => <SectionHeader title={section.title} />}
         renderItem={({ item }) => (
           <LogEntryCard entry={item} onDelete={() => handleDeleteLog(item.id)} />
         )}
@@ -249,9 +244,14 @@ const styles = StyleSheet.create({
   profileInfo: {
     flex: 1,
   },
+  name: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
   species: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '500',
     marginBottom: 4,
   },
   notes: {
