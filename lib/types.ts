@@ -1,4 +1,4 @@
-export type LogType = 'feeding' | 'shedding' | 'temperature' | 'weight' | 'note';
+export type LogType = 'feeding' | 'shedding' | 'temperature' | 'weight' | 'poop' | 'note';
 
 export type WeightUnit = 'g' | 'kg' | 'oz' | 'lb';
 
@@ -19,6 +19,7 @@ export interface LogEntry {
   food: string | null;
   amount: string | null;
   shedQuality: string | null;
+  poopQuality: string | null;
   hotSide: number | null;
   coolSide: number | null;
   ambient: number | null;
@@ -32,6 +33,13 @@ export interface CreateReptileInput {
   notes?: string;
 }
 
+export interface UpdateReptileInput {
+  id: string;
+  name: string;
+  species: string;
+  notes?: string;
+}
+
 export interface CreateLogInput {
   reptileId: string;
   type: LogType;
@@ -40,6 +48,7 @@ export interface CreateLogInput {
   food?: string;
   amount?: string;
   shedQuality?: string;
+  poopQuality?: string;
   hotSide?: number;
   coolSide?: number;
   ambient?: number;
@@ -56,6 +65,7 @@ export const LOG_TYPE_LABELS: Record<LogType, string> = {
   shedding: 'Shedding',
   temperature: 'Temperature',
   weight: 'Weight',
+  poop: 'Poop',
   note: 'Note',
 };
 
@@ -64,5 +74,6 @@ export const LOG_TYPE_ICONS = {
   shedding: { ios: 'leaf', android: 'eco', web: 'eco' },
   temperature: { ios: 'thermometer.medium', android: 'thermostat', web: 'thermostat' },
   weight: { ios: 'scalemass', android: 'scale', web: 'scale' },
+  poop: { ios: 'drop.fill', android: 'water-drop', web: 'water-drop' },
   note: { ios: 'note.text', android: 'note', web: 'note' },
 } as const satisfies Record<LogType, { ios: string; android: string; web: string }>;

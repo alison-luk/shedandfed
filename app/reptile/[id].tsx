@@ -1,5 +1,5 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { Link, Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -25,6 +25,7 @@ function buildFilterCounts(logs: LogEntry[]): Record<LogFilter, number> {
   const counts: Record<LogFilter, number> = {
     all: logs.length,
     feeding: 0,
+    poop: 0,
     shedding: 0,
     temperature: 0,
     weight: 0,
@@ -145,18 +146,32 @@ export default function ReptileDetailScreen() {
 
   const listHeader = (
     <>
-      <View style={[styles.profileCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-        <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
-          <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
-        </View>
-        <View style={styles.profileInfo}>
-          <Text style={styles.name}>{reptile.name}</Text>
-          <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
-          {reptile.notes ? (
-            <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
-          ) : null}
-        </View>
-      </View>
+      <Link href={`/reptile/${id}/edit`} asChild>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`View and edit ${reptile.name}`}
+          style={({ pressed }) => [
+            styles.profileCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: colors.border,
+              opacity: pressed ? 0.92 : 1,
+            },
+          ]}>
+          <View style={[styles.avatar, { backgroundColor: colors.tint }]}>
+            <Text style={styles.avatarText}>{reptile.name.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.name}>{reptile.name}</Text>
+            <Text style={[styles.species, { color: colors.textSecondary }]}>{reptile.species}</Text>
+            {reptile.notes ? (
+              <Text style={[styles.notes, { color: colors.textSecondary }]}>{reptile.notes}</Text>
+            ) : null}
+            <Text style={[styles.editHint, { color: colors.tint }]}>Tap to view or edit</Text>
+          </View>
+          <MaterialIcons name="chevron-right" size={22} color={colors.textSecondary} />
+        </Pressable>
+      </Link>
 
       <LogQuickActions reptileId={id} />
 
@@ -182,13 +197,23 @@ export default function ReptileDetailScreen() {
         options={{
           title: reptile.name,
           headerRight: () => (
-            <Pressable
-              onPress={handleDeleteReptile}
-              accessibilityRole="button"
-              accessibilityLabel="Delete reptile"
-              style={styles.headerButton}>
-              <MaterialIcons name="delete-outline" size={24} color={colors.danger} />
-            </Pressable>
+            <View style={styles.headerActions}>
+              <Link href={`/reptile/${id}/edit`} asChild>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Edit reptile"
+                  style={styles.headerButton}>
+                  <MaterialIcons name="edit" size={22} color={colors.tint} />
+                </Pressable>
+              </Link>
+              <Pressable
+                onPress={handleDeleteReptile}
+                accessibilityRole="button"
+                accessibilityLabel="Delete reptile"
+                style={styles.headerButton}>
+                <MaterialIcons name="delete-outline" size={24} color={colors.danger} />
+              </Pressable>
+            </View>
           ),
         }}
       />
@@ -243,6 +268,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -281,6 +311,11 @@ const styles = StyleSheet.create({
   notes: {
     fontSize: 14,
     lineHeight: 20,
+  },
+  editHint: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 8,
   },
   logHeader: {
     flexDirection: 'row',

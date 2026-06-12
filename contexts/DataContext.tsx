@@ -1,7 +1,14 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import * as db from '@/lib/db';
-import type { CreateLogInput, CreateReptileInput, LogEntry, Reptile, UpdateLogInput } from '@/lib/types';
+import type {
+  CreateLogInput,
+  CreateReptileInput,
+  LogEntry,
+  Reptile,
+  UpdateLogInput,
+  UpdateReptileInput,
+} from '@/lib/types';
 
 interface DataContextValue {
   reptiles: Reptile[];
@@ -9,6 +16,7 @@ interface DataContextValue {
   loading: boolean;
   refresh: () => Promise<void>;
   addReptile: (input: CreateReptileInput) => Promise<Reptile>;
+  editReptile: (input: UpdateReptileInput) => Promise<Reptile>;
   removeReptile: (id: string) => Promise<void>;
   addLog: (input: CreateLogInput) => Promise<LogEntry>;
   editLog: (input: UpdateLogInput) => Promise<LogEntry>;
@@ -42,6 +50,15 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   const addReptile = useCallback(
     async (input: CreateReptileInput) => {
       const reptile = await db.createReptile(input);
+      await refresh();
+      return reptile;
+    },
+    [refresh]
+  );
+
+  const editReptile = useCallback(
+    async (input: UpdateReptileInput) => {
+      const reptile = await db.updateReptile(input);
       await refresh();
       return reptile;
     },
@@ -91,13 +108,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       loading,
       refresh,
       addReptile,
+      editReptile,
       removeReptile,
       addLog,
       editLog,
       removeLog,
       getReptileLogs,
     }),
-    [reptiles, recentLogs, loading, refresh, addReptile, removeReptile, addLog, editLog, removeLog, getReptileLogs]
+    [reptiles, recentLogs, loading, refresh, addReptile, editReptile, removeReptile, addLog, editLog, removeLog, getReptileLogs]
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

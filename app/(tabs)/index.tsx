@@ -73,7 +73,6 @@ export default function ReptilesScreen() {
           keyExtractor={(item) => item.id}
           numColumns={3}
           contentContainerStyle={[styles.list, { paddingBottom: tabOffset }]}
-          columnWrapperStyle={styles.row}
           ListHeaderComponent={
             <SearchField value={searchQuery} onChangeText={setSearchQuery} />
           }
@@ -105,9 +104,6 @@ const styles = StyleSheet.create({
   list: {
     paddingTop: 8,
     paddingHorizontal: 10,
-  },
-  row: {
-    justifyContent: 'flex-start',
   },
   headerAdd: {
     flexDirection: 'row',

@@ -9,7 +9,7 @@ import { LOG_TYPE_LABELS, type LogType } from '@/lib/types';
 
 export type LogFilter = 'all' | LogType;
 
-const ALL_FILTERS: LogFilter[] = ['all', 'feeding', 'shedding', 'temperature', 'weight', 'note'];
+const ALL_FILTERS: LogFilter[] = ['all', 'feeding', 'poop', 'shedding', 'temperature', 'weight', 'note'];
 
 interface LogFilterBarProps {
   value: LogFilter;

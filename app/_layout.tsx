@@ -85,6 +85,10 @@ function RootLayoutNav() {
           name="reptile/[id]/add-log"
           options={{ title: 'Log Entry', presentation: 'modal' }}
         />
+        <Stack.Screen
+          name="reptile/[id]/edit"
+          options={{ title: 'Edit Reptile', presentation: 'modal' }}
+        />
         <Stack.Screen name="reptile/[id]" options={{ title: 'Reptile' }} />
       </Stack>
     </ThemeProvider>

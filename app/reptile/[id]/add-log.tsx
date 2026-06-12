@@ -21,9 +21,11 @@ import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
 import { LOG_TYPE_LABELS, type LogType, type WeightUnit } from '@/lib/types';
 
-const LOG_TYPES: LogType[] = ['feeding', 'shedding', 'temperature', 'weight', 'note'];
+const LOG_TYPES: LogType[] = ['feeding', 'shedding', 'temperature', 'weight', 'poop', 'note'];
 
 const SHED_OPTIONS = ['Complete', 'Partial', 'Stuck shed', 'Blue phase'];
+
+const POOP_OPTIONS = ['Normal', 'Runny', 'Hard', 'Unusual', 'None'];
 
 const WEIGHT_UNITS: WeightUnit[] = ['g', 'kg', 'oz', 'lb'];
 
@@ -44,6 +46,7 @@ function buildLogPayload(
     food: string;
     amount: string;
     shedQuality: string;
+    poopQuality: string;
     hotSide: string;
     coolSide: string;
     ambient: string;
@@ -59,6 +62,7 @@ function buildLogPayload(
     food: type === 'feeding' ? fields.food : undefined,
     amount: type === 'feeding' ? fields.amount : undefined,
     shedQuality: type === 'shedding' ? fields.shedQuality : undefined,
+    poopQuality: type === 'poop' ? fields.poopQuality : undefined,
     hotSide: type === 'temperature' && fields.hotSide ? parseFloat(fields.hotSide) : undefined,
     coolSide: type === 'temperature' && fields.coolSide ? parseFloat(fields.coolSide) : undefined,
     ambient: type === 'temperature' && fields.ambient ? parseFloat(fields.ambient) : undefined,
@@ -88,6 +92,7 @@ export default function AddLogScreen() {
   const [food, setFood] = useState('');
   const [amount, setAmount] = useState('');
   const [shedQuality, setShedQuality] = useState('Complete');
+  const [poopQuality, setPoopQuality] = useState('Normal');
   const [hotSide, setHotSide] = useState('');
   const [coolSide, setCoolSide] = useState('');
   const [ambient, setAmbient] = useState('');
@@ -113,6 +118,7 @@ export default function AddLogScreen() {
       setFood(entry.food ?? '');
       setAmount(entry.amount ?? '');
       setShedQuality(entry.shedQuality ?? 'Complete');
+      setPoopQuality(entry.poopQuality ?? 'Normal');
       setHotSide(entry.hotSide != null ? String(entry.hotSide) : '');
       setCoolSide(entry.coolSide != null ? String(entry.coolSide) : '');
       setAmbient(entry.ambient != null ? String(entry.ambient) : '');
@@ -130,6 +136,7 @@ export default function AddLogScreen() {
       food,
       amount,
       shedQuality,
+      poopQuality,
       hotSide,
       coolSide,
       ambient,
@@ -260,6 +267,33 @@ export default function AddLogScreen() {
                   <Pressable
                     key={option}
                     onPress={() => setShedQuality(option)}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: selected ? colors.tint : colors.card,
+                        borderColor: selected ? colors.tint : colors.border,
+                      },
+                    ]}>
+                    <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 13 }}>
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+
+        {type === 'poop' ? (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Poop Quality</Text>
+            <View style={styles.optionRow}>
+              {POOP_OPTIONS.map((option) => {
+                const selected = poopQuality === option;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => setPoopQuality(option)}
                     style={[
                       styles.optionChip,
                       {

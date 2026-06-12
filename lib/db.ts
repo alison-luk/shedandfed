@@ -1,6 +1,13 @@
 import * as SQLite from 'expo-sqlite';
 
-import type { CreateLogInput, CreateReptileInput, LogEntry, Reptile, UpdateLogInput } from './types';
+import type {
+  CreateLogInput,
+  CreateReptileInput,
+  LogEntry,
+  Reptile,
+  UpdateLogInput,
+  UpdateReptileInput,
+} from './types';
 
 const DATABASE_NAME = 'shedandfed.db';
 
@@ -61,6 +68,7 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
       food TEXT,
       amount TEXT,
       shed_quality TEXT,
+      poop_quality TEXT,
       hot_side REAL,
       cool_side REAL,
       ambient REAL,
@@ -74,6 +82,12 @@ async function initializeSchema(db: SQLite.SQLiteDatabase): Promise<void> {
     'CREATE INDEX IF NOT EXISTS idx_log_entries_reptile_id ON log_entries(reptile_id);'
   );
   await db.execAsync('CREATE INDEX IF NOT EXISTS idx_log_entries_date ON log_entries(date);');
+
+  try {
+    await db.execAsync('ALTER TABLE log_entries ADD COLUMN poop_quality TEXT;');
+  } catch {
+    // Column already exists on upgraded databases.
+  }
 }
 
 function generateId(): string {
@@ -100,6 +114,7 @@ function mapLogEntry(row: Record<string, unknown>): LogEntry {
     food: (row.food as string | null) ?? null,
     amount: (row.amount as string | null) ?? null,
     shedQuality: (row.shed_quality as string | null) ?? null,
+    poopQuality: (row.poop_quality as string | null) ?? null,
     hotSide: row.hot_side != null ? Number(row.hot_side) : null,
     coolSide: row.cool_side != null ? Number(row.cool_side) : null,
     ambient: row.ambient != null ? Number(row.ambient) : null,
@@ -143,6 +158,33 @@ export function createReptile(input: CreateReptileInput): Promise<Reptile> {
     await db.runAsync(
       'INSERT INTO reptiles (id, name, species, notes, created_at) VALUES (?, ?, ?, ?, ?)',
       [reptile.id, reptile.name, reptile.species, reptile.notes, reptile.createdAt]
+    );
+
+    return reptile;
+  });
+}
+
+export function updateReptile(input: UpdateReptileInput): Promise<Reptile> {
+  return enqueue(async () => {
+    const db = await getDatabase();
+    const row = await db.getFirstAsync<Record<string, unknown>>(
+      'SELECT * FROM reptiles WHERE id = ?',
+      [input.id]
+    );
+    if (!row) {
+      throw new Error('Reptile not found');
+    }
+
+    const reptile: Reptile = {
+      ...mapReptile(row),
+      name: input.name.trim(),
+      species: input.species.trim(),
+      notes: input.notes?.trim() || null,
+    };
+
+    await db.runAsync(
+      'UPDATE reptiles SET name = ?, species = ?, notes = ? WHERE id = ?',
+      [reptile.name, reptile.species, reptile.notes, reptile.id]
     );
 
     return reptile;
@@ -199,6 +241,7 @@ export function createLog(input: CreateLogInput): Promise<LogEntry> {
       food: input.food?.trim() || null,
       amount: input.amount?.trim() || null,
       shedQuality: input.shedQuality?.trim() || null,
+      poopQuality: input.poopQuality?.trim() || null,
       hotSide: input.hotSide ?? null,
       coolSide: input.coolSide ?? null,
       ambient: input.ambient ?? null,
@@ -208,9 +251,9 @@ export function createLog(input: CreateLogInput): Promise<LogEntry> {
 
     await db.runAsync(
       `INSERT INTO log_entries (
-        id, reptile_id, type, date, notes, food, amount, shed_quality,
+        id, reptile_id, type, date, notes, food, amount, shed_quality, poop_quality,
         hot_side, cool_side, ambient, weight, weight_unit
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         entry.id,
         entry.reptileId,
@@ -220,6 +263,7 @@ export function createLog(input: CreateLogInput): Promise<LogEntry> {
         entry.food,
         entry.amount,
         entry.shedQuality,
+        entry.poopQuality,
         entry.hotSide,
         entry.coolSide,
         entry.ambient,
@@ -255,6 +299,7 @@ export function updateLog(input: UpdateLogInput): Promise<LogEntry> {
       food: input.food?.trim() || null,
       amount: input.amount?.trim() || null,
       shedQuality: input.shedQuality?.trim() || null,
+      poopQuality: input.poopQuality?.trim() || null,
       hotSide: input.hotSide ?? null,
       coolSide: input.coolSide ?? null,
       ambient: input.ambient ?? null,
@@ -264,7 +309,7 @@ export function updateLog(input: UpdateLogInput): Promise<LogEntry> {
 
     await db.runAsync(
       `UPDATE log_entries SET
-        type = ?, date = ?, notes = ?, food = ?, amount = ?, shed_quality = ?,
+        type = ?, date = ?, notes = ?, food = ?, amount = ?, shed_quality = ?, poop_quality = ?,
         hot_side = ?, cool_side = ?, ambient = ?, weight = ?, weight_unit = ?
       WHERE id = ?`,
       [
@@ -274,6 +319,7 @@ export function updateLog(input: UpdateLogInput): Promise<LogEntry> {
         entry.food,
         entry.amount,
         entry.shedQuality,
+        entry.poopQuality,
         entry.hotSide,
         entry.coolSide,
         entry.ambient,

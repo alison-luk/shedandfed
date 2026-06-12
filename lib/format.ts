@@ -70,6 +70,9 @@ export function formatLogDetails(entry: LogEntry): LogDetailLine[] {
     case 'shedding':
       if (entry.shedQuality) lines.push({ label: 'Quality', value: entry.shedQuality });
       break;
+    case 'poop':
+      if (entry.poopQuality) lines.push({ label: 'Quality', value: entry.poopQuality });
+      break;
     case 'temperature':
       if (entry.hotSide != null) lines.push({ label: 'Hot side', value: `${entry.hotSide}°F` });
       if (entry.coolSide != null) lines.push({ label: 'Cool side', value: `${entry.coolSide}°F` });

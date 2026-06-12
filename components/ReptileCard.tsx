@@ -6,6 +6,8 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import type { Reptile } from '@/lib/types';
 
+const AVATAR_SIZE = 72;
+
 interface ReptileCardProps {
   reptile: Reptile;
 }
@@ -35,18 +37,18 @@ export default function ReptileCard({ reptile }: ReptileCardProps) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    flex: 1,
-    maxWidth: '33.33%',
-    paddingHorizontal: 6,
+    width: '33.33%',
+    alignItems: 'center',
     marginBottom: 20,
   },
   pressable: {
+    width: AVATAR_SIZE,
     alignItems: 'center',
   },
   avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: AVATAR_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 3,
@@ -58,6 +60,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   name: {
+    width: AVATAR_SIZE,
     fontSize: 13,
     fontWeight: '600',
     textAlign: 'center',
