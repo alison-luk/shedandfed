@@ -7,10 +7,13 @@
     "icon": "./assets/images/icon.png",
     "scheme": "shedandfed",
     "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F4F7F4",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "backgroundColor": "#F4F7F4"
     },
     "android": {
+      "backgroundColor": "#F4F7F4",
       "adaptiveIcon": {
         "backgroundColor": "#2D6A4F",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
