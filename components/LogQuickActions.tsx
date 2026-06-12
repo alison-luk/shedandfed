@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -27,10 +27,11 @@ interface LogQuickActionsProps {
 interface QuickLogButtonProps {
   label: string;
   accessibilityLabel: string;
+  onPress: () => void;
   children: ReactNode;
 }
 
-function QuickLogButton({ label, accessibilityLabel, children }: QuickLogButtonProps) {
+function QuickLogButton({ label, accessibilityLabel, onPress, children }: QuickLogButtonProps) {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
 
@@ -38,6 +39,7 @@ function QuickLogButton({ label, accessibilityLabel, children }: QuickLogButtonP
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      onPress={onPress}
       style={({ pressed }) => [styles.action, { opacity: pressed ? 0.75 : 1 }]}>
       <View style={[styles.iconCircle, { backgroundColor: colors.tint }]}>{children}</View>
       <Text style={[styles.label, { color: colors.text }]} numberOfLines={2}>
@@ -48,8 +50,13 @@ function QuickLogButton({ label, accessibilityLabel, children }: QuickLogButtonP
 }
 
 export default function LogQuickActions({ reptileId }: LogQuickActionsProps) {
+  const router = useRouter();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+
+  function openLogForm(type: LogType) {
+    router.push(`/reptile/${reptileId}/add-log?type=${type}`);
+  }
 
   return (
     <View style={styles.wrapper}>
@@ -60,13 +67,12 @@ export default function LogQuickActions({ reptileId }: LogQuickActionsProps) {
 
           return (
             <View key={logType} style={styles.cell}>
-              <Link href={`/reptile/${reptileId}/add-log?type=${logType}`} asChild>
-                <QuickLogButton
-                  label={label}
-                  accessibilityLabel={`Log ${label.toLowerCase()}`}>
-                  <LogTypeIcon type={logType} size={22} color="#fff" />
-                </QuickLogButton>
-              </Link>
+              <QuickLogButton
+                label={label}
+                accessibilityLabel={`Log ${label.toLowerCase()}`}
+                onPress={() => openLogForm(logType)}>
+                <LogTypeIcon type={logType} size={22} color="#fff" />
+              </QuickLogButton>
             </View>
           );
         })}
