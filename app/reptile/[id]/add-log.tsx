@@ -1,4 +1,3 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import LogTypeIcon from '@/components/LogTypeIcon';
@@ -14,6 +13,7 @@ import {
   View,
 } from 'react-native';
 
+import DateTimeField from '@/components/DateTimeField';
 import FormField from '@/components/FormField';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
@@ -103,7 +103,6 @@ export default function AddLogScreen() {
   const [type, setType] = useState<LogType>(initialType);
   const typeLocked = Boolean(typeParam) && !isEditing;
   const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [notes, setNotes] = useState('');
   const [food, setFood] = useState('');
   const [amount, setAmount] = useState('');
@@ -254,33 +253,7 @@ export default function AddLogScreen() {
           </View>
         )}
 
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Date & Time</Text>
-        <Pressable
-          onPress={() => setShowDatePicker(true)}
-          style={[styles.dateButton, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MaterialIcons name="event" size={22} color={colors.tint} />
-          <Text style={styles.dateText}>
-            {date.toLocaleString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
-          </Text>
-        </Pressable>
-
-        {showDatePicker ? (
-          <DateTimePicker
-            value={date}
-            mode="datetime"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(_, selected) => {
-              setShowDatePicker(Platform.OS === 'ios');
-              if (selected) setDate(selected);
-            }}
-          />
-        ) : null}
+        <DateTimeField value={date} onChange={setDate} />
 
         {type === 'feeding' ? (
           <>
@@ -509,18 +482,6 @@ const styles = StyleSheet.create({
   typeBannerText: {
     fontSize: 17,
     fontWeight: '600',
-  },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginBottom: 20,
-  },
-  dateText: {
-    fontSize: 16,
   },
   optionRow: {
     flexDirection: 'row',
