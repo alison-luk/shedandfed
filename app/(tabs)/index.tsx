@@ -1,9 +1,11 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Link, Stack } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, View } from 'react-native';
 
+import AddReptileButton from '@/components/AddReptileButton';
 import EmptyState from '@/components/EmptyState';
 import ReptileCard from '@/components/ReptileCard';
+import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
@@ -13,7 +15,7 @@ export default function ReptilesScreen() {
   const { reptiles, loading } = useData();
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
-  const fabBottom = useBottomTabOffset();
+  const tabOffset = useBottomTabOffset(8);
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
@@ -21,14 +23,26 @@ export default function ReptilesScreen() {
         options={{
           headerRight: () => (
             <Link href="/reptile/add" asChild>
-              <Pressable style={styles.addButton}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Add reptile"
+                style={styles.headerAdd}>
                 {({ pressed }) => (
-                  <SymbolView
-                    name={{ ios: 'plus.circle.fill', android: 'add_circle', web: 'add_circle' } as never}
-                    tintColor={colors.tint}
-                    size={28}
-                    style={{ opacity: pressed ? 0.6 : 1 }}
-                  />
+                  <>
+                    <MaterialIcons
+                      name="add"
+                      size={22}
+                      color={colors.tint}
+                      style={{ opacity: pressed ? 0.6 : 1 }}
+                    />
+                    <Text
+                      style={[
+                        styles.headerAddText,
+                        { color: colors.tint, opacity: pressed ? 0.6 : 1 },
+                      ]}>
+                      Add
+                    </Text>
+                  </>
                 )}
               </Pressable>
             </Link>
@@ -39,31 +53,35 @@ export default function ReptilesScreen() {
       {loading ? (
         <ActivityIndicator style={styles.loader} color={colors.tint} />
       ) : reptiles.length === 0 ? (
-        <EmptyState
-          title="No reptiles yet"
-          message="Add your first reptile to start tracking feedings, sheds, temperatures, and more."
-          actionLabel="Add Reptile"
-          actionHref="/reptile/add"
-        />
+        <View style={[styles.emptyWrap, { paddingBottom: tabOffset + 80 }]}>
+          <EmptyState
+            title="No reptiles yet"
+            message="Add your first reptile to start tracking feedings, sheds, temperatures, and more."
+          />
+          <AddReptileButton label="Add your first reptile" variant="inline" />
+        </View>
       ) : (
         <FlatList
           data={reptiles}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.list, { paddingBottom: fabBottom + 56 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: tabOffset + 80 }]}
           renderItem={({ item }) => <ReptileCard reptile={item} />}
+          ListFooterComponent={
+            <View style={styles.footer}>
+              <AddReptileButton label="Add another reptile" variant="inline" />
+            </View>
+          }
         />
       )}
 
       {!loading ? (
-        <Link href="/reptile/add" asChild>
-          <Pressable style={[styles.fab, { backgroundColor: colors.tint, bottom: fabBottom }]}>
-            <SymbolView
-              name={{ ios: 'plus', android: 'add', web: 'add' } as never}
-              tintColor="#fff"
-              size={28}
-            />
-          </Pressable>
-        </Link>
+        <View
+          style={[
+            styles.stickyBar,
+            { bottom: tabOffset, backgroundColor: colors.background, borderTopColor: colors.border },
+          ]}>
+          <AddReptileButton label="Add Reptile" variant="bar" />
+        </View>
       ) : null}
     </View>
   );
@@ -76,24 +94,38 @@ const styles = StyleSheet.create({
   loader: {
     flex: 1,
   },
+  emptyWrap: {
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 24,
+    gap: 24,
+  },
   list: {
     padding: 16,
+    paddingTop: 8,
   },
-  addButton: {
-    marginRight: 16,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+  footer: {
+    marginTop: 8,
+    marginBottom: 16,
     alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+  },
+  headerAdd: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginRight: 16,
+    minHeight: 44,
+    paddingHorizontal: 4,
+  },
+  headerAddText: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  stickyBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    paddingTop: 8,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
 });

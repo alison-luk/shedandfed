@@ -1,11 +1,11 @@
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Stack, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { SymbolView } from 'expo-symbols';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Pressable,
+  SectionList,
   StyleSheet,
   View,
 } from 'react-native';
@@ -14,10 +14,12 @@ import EmptyState from '@/components/EmptyState';
 import LogEntryCard from '@/components/LogEntryCard';
 import LogFilterBar, { type LogFilter } from '@/components/LogFilterBar';
 import LogQuickActions from '@/components/LogQuickActions';
+import SectionHeader from '@/components/SectionHeader';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
+import { groupLogsByDate } from '@/lib/format';
 import type { LogEntry, Reptile } from '@/lib/types';
 
 function buildFilterCounts(logs: LogEntry[]): Record<LogFilter, number> {
@@ -77,6 +79,8 @@ export default function ReptileDetailScreen() {
     () => (filter === 'all' ? logs : logs.filter((log) => log.type === filter)),
     [logs, filter]
   );
+
+  const sections = useMemo(() => groupLogsByDate(filteredLogs), [filteredLogs]);
 
   function handleDeleteReptile() {
     Alert.alert(
@@ -150,7 +154,12 @@ export default function ReptileDetailScreen() {
         </Text>
       </View>
 
-      <LogFilterBar value={filter} onChange={setFilter} counts={filterCounts} />
+      <LogFilterBar
+        value={filter}
+        onChange={setFilter}
+        counts={filterCounts}
+        totalLogs={logs.length}
+      />
     </>
   );
 
@@ -160,52 +169,41 @@ export default function ReptileDetailScreen() {
         options={{
           title: reptile.name,
           headerRight: () => (
-            <Pressable onPress={handleDeleteReptile} style={styles.headerButton}>
-              <SymbolView
-                name={{ ios: 'trash', android: 'delete', web: 'delete' } as never}
-                tintColor={colors.danger}
-                size={22}
-              />
+            <Pressable
+              onPress={handleDeleteReptile}
+              accessibilityRole="button"
+              accessibilityLabel="Delete reptile"
+              style={styles.headerButton}>
+              <MaterialIcons name="delete-outline" size={24} color={colors.danger} />
             </Pressable>
           ),
         }}
       />
 
-      {logs.length === 0 ? (
-        <FlatList
-          data={[]}
-          ListHeaderComponent={listHeader}
-          renderItem={() => null}
-          ListEmptyComponent={
+      <SectionList
+        sections={sections}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={styles.list}
+        ListHeaderComponent={listHeader}
+        stickySectionHeadersEnabled
+        renderSectionHeader={({ section }) => <SectionHeader title={section.title} />}
+        renderItem={({ item }) => (
+          <LogEntryCard entry={item} onDelete={() => handleDeleteLog(item.id)} />
+        )}
+        ListEmptyComponent={
+          logs.length === 0 ? (
             <EmptyState
               title="No logs yet"
               message="Tap a quick log icon above to record feedings, sheds, temperatures, weight, or notes."
             />
-          }
-        />
-      ) : filteredLogs.length === 0 ? (
-        <FlatList
-          data={[]}
-          ListHeaderComponent={listHeader}
-          renderItem={() => null}
-          ListEmptyComponent={
+          ) : (
             <EmptyState
               title="No matching entries"
               message="Try a different filter to see more of this reptile's care log."
             />
-          }
-        />
-      ) : (
-        <FlatList
-          data={filteredLogs}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
-          ListHeaderComponent={listHeader}
-          renderItem={({ item }) => (
-            <LogEntryCard entry={item} onDelete={() => handleDeleteLog(item.id)} />
-          )}
-        />
-      )}
+          )
+        }
+      />
     </View>
   );
 }
@@ -221,6 +219,10 @@ const styles = StyleSheet.create({
   },
   headerButton: {
     marginRight: 16,
+    minHeight: 44,
+    minWidth: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   profileCard: {
     flexDirection: 'row',
@@ -274,5 +276,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingBottom: 24,
+    flexGrow: 1,
   },
 });

@@ -1,5 +1,7 @@
-import { SymbolView } from 'expo-symbols';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Tabs } from 'expo-router';
+import { Platform, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -7,6 +9,8 @@ import { useColorScheme } from '@/components/useColorScheme';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const colors = Colors[colorScheme];
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, Platform.OS === 'android' ? 10 : 0);
 
   return (
     <Tabs
@@ -16,11 +20,33 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: colors.card,
           borderTopColor: colors.border,
+          borderTopWidth: 1,
+          paddingTop: 8,
+          paddingBottom: bottomPadding,
+          minHeight: 60 + bottomPadding,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: '600',
+          marginTop: 2,
+          marginBottom: 2,
         },
+        tabBarItemStyle: {
+          minHeight: 52,
+          paddingVertical: 4,
+        },
+        tabBarButton: (props) => (
+          <Pressable
+            onPress={props.onPress}
+            onLongPress={props.onLongPress}
+            accessibilityRole="tab"
+            accessibilityState={props.accessibilityState}
+            accessibilityLabel={props.accessibilityLabel}
+            testID={props.testID}
+            style={props.style}
+            android_ripple={{ color: `${colors.tint}33` }}
+          />
+        ),
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.text,
         headerShown: true,
@@ -29,13 +55,10 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'My Reptiles',
-          tabBarLabel: 'My Reptiles',
-          tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'lizard', android: 'pets', web: 'pets' } as never}
-              tintColor={color}
-              size={26}
-            />
+          tabBarLabel: 'Reptiles',
+          tabBarAccessibilityLabel: 'My Reptiles tab',
+          tabBarIcon: ({ color, focused }) => (
+            <MaterialIcons name={focused ? 'pets' : 'pets'} size={28} color={color} />
           ),
         }}
       />
@@ -44,12 +67,9 @@ export default function TabLayout() {
         options={{
           title: 'Activity',
           tabBarLabel: 'Activity',
+          tabBarAccessibilityLabel: 'Activity tab',
           tabBarIcon: ({ color }) => (
-            <SymbolView
-              name={{ ios: 'clock.arrow.circlepath', android: 'history', web: 'history' } as never}
-              tintColor={color}
-              size={26}
-            />
+            <MaterialIcons name="history" size={28} color={color} />
           ),
         }}
       />
