@@ -1,0 +1,335 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
+import { useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+
+import FormField from '@/components/FormField';
+import { Text } from '@/components/Themed';
+import Colors from '@/constants/Colors';
+import { useColorScheme } from '@/components/useColorScheme';
+import { useData } from '@/contexts/DataContext';
+import {
+  LOG_TYPE_ICONS,
+  LOG_TYPE_LABELS,
+  type LogType,
+  type WeightUnit,
+} from '@/lib/types';
+
+const LOG_TYPES: LogType[] = ['feeding', 'shedding', 'temperature', 'weight', 'note'];
+
+const SHED_OPTIONS = ['Complete', 'Partial', 'Stuck shed', 'Blue phase'];
+
+const WEIGHT_UNITS: WeightUnit[] = ['g', 'kg', 'oz', 'lb'];
+
+export default function AddLogScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { addLog } = useData();
+  const colorScheme = useColorScheme();
+  const colors = Colors[colorScheme];
+
+  const [type, setType] = useState<LogType>('feeding');
+  const [date, setDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [notes, setNotes] = useState('');
+  const [food, setFood] = useState('');
+  const [amount, setAmount] = useState('');
+  const [shedQuality, setShedQuality] = useState('Complete');
+  const [hotSide, setHotSide] = useState('');
+  const [coolSide, setCoolSide] = useState('');
+  const [ambient, setAmbient] = useState('');
+  const [weight, setWeight] = useState('');
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('g');
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!id) return;
+
+    setSaving(true);
+    try {
+      await addLog({
+        reptileId: id,
+        type,
+        date: date.toISOString(),
+        notes: notes || undefined,
+        food: type === 'feeding' ? food : undefined,
+        amount: type === 'feeding' ? amount : undefined,
+        shedQuality: type === 'shedding' ? shedQuality : undefined,
+        hotSide: type === 'temperature' && hotSide ? parseFloat(hotSide) : undefined,
+        coolSide: type === 'temperature' && coolSide ? parseFloat(coolSide) : undefined,
+        ambient: type === 'temperature' && ambient ? parseFloat(ambient) : undefined,
+        weight: type === 'weight' && weight ? parseFloat(weight) : undefined,
+        weightUnit: type === 'weight' ? weightUnit : undefined,
+      });
+      router.back();
+    } catch {
+      Alert.alert('Error', 'Could not save log entry. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <KeyboardAvoidingView
+      style={[styles.container, { backgroundColor: colors.background }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Stack.Screen
+        options={{
+          headerRight: () => (
+            <Pressable onPress={handleSave} disabled={saving} style={styles.saveButton}>
+              <Text style={[styles.saveText, { color: colors.tint, opacity: saving ? 0.5 : 1 }]}>
+                Save
+              </Text>
+            </Pressable>
+          ),
+        }}
+      />
+
+      <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Entry Type</Text>
+        <View style={styles.typeGrid}>
+          {LOG_TYPES.map((logType) => {
+            const selected = type === logType;
+            return (
+              <Pressable
+                key={logType}
+                onPress={() => setType(logType)}
+                style={[
+                  styles.typeChip,
+                  {
+                    backgroundColor: selected ? colors.tint : colors.card,
+                    borderColor: selected ? colors.tint : colors.border,
+                  },
+                ]}>
+                <SymbolView
+                  name={LOG_TYPE_ICONS[logType] as never}
+                  tintColor={selected ? '#fff' : colors.tint}
+                  size={18}
+                />
+                <Text style={[styles.typeChipText, { color: selected ? '#fff' : colors.text }]}>
+                  {LOG_TYPE_LABELS[logType]}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Date & Time</Text>
+        <Pressable
+          onPress={() => setShowDatePicker(true)}
+          style={[styles.dateButton, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <SymbolView
+            name={{ ios: 'calendar', android: 'calendar_today', web: 'calendar_today' }}
+            tintColor={colors.tint}
+            size={20}
+          />
+          <Text style={styles.dateText}>
+            {date.toLocaleString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            })}
+          </Text>
+        </Pressable>
+
+        {showDatePicker ? (
+          <DateTimePicker
+            value={date}
+            mode="datetime"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            onChange={(_, selected) => {
+              setShowDatePicker(Platform.OS === 'ios');
+              if (selected) setDate(selected);
+            }}
+          />
+        ) : null}
+
+        {type === 'feeding' ? (
+          <>
+            <FormField label="Food" value={food} onChangeText={setFood} placeholder="e.g. Frozen mouse" />
+            <FormField label="Amount" value={amount} onChangeText={setAmount} placeholder="e.g. 1 medium" />
+          </>
+        ) : null}
+
+        {type === 'shedding' ? (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Shed Quality</Text>
+            <View style={styles.optionRow}>
+              {SHED_OPTIONS.map((option) => {
+                const selected = shedQuality === option;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => setShedQuality(option)}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: selected ? colors.tint : colors.card,
+                        borderColor: selected ? colors.tint : colors.border,
+                      },
+                    ]}>
+                    <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 13 }}>
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+
+        {type === 'temperature' ? (
+          <>
+            <FormField
+              label="Hot Side (°F)"
+              value={hotSide}
+              onChangeText={setHotSide}
+              placeholder="e.g. 88"
+              keyboardType="decimal-pad"
+            />
+            <FormField
+              label="Cool Side (°F)"
+              value={coolSide}
+              onChangeText={setCoolSide}
+              placeholder="e.g. 75"
+              keyboardType="decimal-pad"
+            />
+            <FormField
+              label="Ambient (°F)"
+              value={ambient}
+              onChangeText={setAmbient}
+              placeholder="Optional"
+              keyboardType="decimal-pad"
+            />
+          </>
+        ) : null}
+
+        {type === 'weight' ? (
+          <>
+            <FormField
+              label="Weight"
+              value={weight}
+              onChangeText={setWeight}
+              placeholder="e.g. 450"
+              keyboardType="decimal-pad"
+            />
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Unit</Text>
+            <View style={styles.optionRow}>
+              {WEIGHT_UNITS.map((unit) => {
+                const selected = weightUnit === unit;
+                return (
+                  <Pressable
+                    key={unit}
+                    onPress={() => setWeightUnit(unit)}
+                    style={[
+                      styles.unitChip,
+                      {
+                        backgroundColor: selected ? colors.tint : colors.card,
+                        borderColor: selected ? colors.tint : colors.border,
+                      },
+                    ]}>
+                    <Text style={{ color: selected ? '#fff' : colors.text, fontWeight: '600' }}>
+                      {unit}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+
+        <FormField
+          label={type === 'note' ? 'Note' : 'Notes (optional)'}
+          value={notes}
+          onChangeText={setNotes}
+          placeholder={type === 'note' ? 'Write your note here...' : 'Additional details...'}
+          multiline
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  form: {
+    padding: 16,
+    paddingBottom: 32,
+  },
+  saveButton: {
+    marginRight: 16,
+    paddingVertical: 4,
+  },
+  saveText: {
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  sectionLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  typeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  typeChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  typeChipText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  dateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 20,
+  },
+  dateText: {
+    fontSize: 16,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  optionChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  unitChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+});
