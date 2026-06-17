@@ -7,7 +7,16 @@ export interface Reptile {
   name: string;
   species: string;
   notes: string | null;
+  feedingIntervalDays: number | null;
+  feedingRemindersEnabled: boolean;
   createdAt: string;
+}
+
+export interface ReptileCareSummary {
+  reptileId: string;
+  lastFed: string | null;
+  lastShed: string | null;
+  lastPoop: string | null;
 }
 
 export interface LogEntry {
@@ -31,6 +40,8 @@ export interface CreateReptileInput {
   name: string;
   species: string;
   notes?: string;
+  feedingIntervalDays?: number | null;
+  feedingRemindersEnabled?: boolean;
 }
 
 export interface UpdateReptileInput {
@@ -38,6 +49,8 @@ export interface UpdateReptileInput {
   name: string;
   species: string;
   notes?: string;
+  feedingIntervalDays?: number | null;
+  feedingRemindersEnabled?: boolean;
 }
 
 export interface CreateLogInput {

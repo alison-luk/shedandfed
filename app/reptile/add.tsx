@@ -10,11 +10,13 @@ import {
   View,
 } from 'react-native';
 
+import FeedingScheduleFields from '@/components/FeedingScheduleFields';
 import FormField from '@/components/FormField';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
+import { areNotificationsAvailable, requestNotificationPermissions } from '@/lib/notifications';
 
 export default function AddReptileScreen() {
   const { addReptile } = useData();
@@ -24,7 +26,27 @@ export default function AddReptileScreen() {
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
   const [notes, setNotes] = useState('');
+  const [feedingIntervalDays, setFeedingIntervalDays] = useState<number | null>(7);
+  const [feedingRemindersEnabled, setFeedingRemindersEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  async function handleRemindersChange(enabled: boolean) {
+    if (enabled && !areNotificationsAvailable()) {
+      return;
+    }
+
+    if (enabled) {
+      const granted = await requestNotificationPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Notifications disabled',
+          'Enable notifications in your device settings to get feeding reminders.'
+        );
+        return;
+      }
+    }
+    setFeedingRemindersEnabled(enabled);
+  }
 
   async function handleSave() {
     if (!name.trim()) {
@@ -38,7 +60,13 @@ export default function AddReptileScreen() {
 
     setSaving(true);
     try {
-      const reptile = await addReptile({ name, species, notes });
+      const reptile = await addReptile({
+        name,
+        species,
+        notes,
+        feedingIntervalDays,
+        feedingRemindersEnabled,
+      });
       router.replace(`/reptile/${reptile.id}`);
     } catch {
       Alert.alert('Error', 'Could not save reptile. Please try again.');
@@ -81,6 +109,17 @@ export default function AddReptileScreen() {
           onChangeText={setNotes}
           placeholder="Morph, enclosure setup, vet info..."
           multiline
+        />
+        <FeedingScheduleFields
+          intervalDays={feedingIntervalDays}
+          remindersEnabled={feedingRemindersEnabled}
+          onIntervalChange={(days) => {
+            setFeedingIntervalDays(days);
+            if (!days) {
+              setFeedingRemindersEnabled(false);
+            }
+          }}
+          onRemindersChange={handleRemindersChange}
         />
       </ScrollView>
     </KeyboardAvoidingView>

@@ -1,11 +1,13 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import * as db from '@/lib/db';
+import { syncFeedingReminders } from '@/lib/notifications';
 import type {
   CreateLogInput,
   CreateReptileInput,
   LogEntry,
   Reptile,
+  ReptileCareSummary,
   UpdateLogInput,
   UpdateReptileInput,
 } from '@/lib/types';
@@ -13,6 +15,7 @@ import type {
 interface DataContextValue {
   reptiles: Reptile[];
   recentLogs: (LogEntry & { reptileName: string })[];
+  careSummaries: Record<string, ReptileCareSummary>;
   loading: boolean;
   refresh: () => Promise<void>;
   addReptile: (input: CreateReptileInput) => Promise<Reptile>;
@@ -26,16 +29,24 @@ interface DataContextValue {
 
 const DataContext = createContext<DataContextValue | null>(null);
 
+const EMPTY_SUMMARIES: Record<string, ReptileCareSummary> = {};
+
 export function DataProvider({ children }: { children: React.ReactNode }) {
   const [reptiles, setReptiles] = useState<Reptile[]>([]);
   const [recentLogs, setRecentLogs] = useState<(LogEntry & { reptileName: string })[]>([]);
+  const [careSummaries, setCareSummaries] = useState<Record<string, ReptileCareSummary>>(EMPTY_SUMMARIES);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const nextReptiles = await db.getReptiles();
-    const nextLogs = await db.getRecentLogs();
+    const [nextReptiles, nextLogs, nextSummaries] = await Promise.all([
+      db.getReptiles(),
+      db.getRecentLogs(),
+      db.getCareSummaries(),
+    ]);
     setReptiles(nextReptiles);
     setRecentLogs(nextLogs);
+    setCareSummaries(nextSummaries);
+    await syncFeedingReminders(nextReptiles, nextSummaries);
   }, []);
 
   useEffect(() => {
@@ -105,6 +116,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     () => ({
       reptiles,
       recentLogs,
+      careSummaries,
       loading,
       refresh,
       addReptile,
@@ -115,7 +127,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       removeLog,
       getReptileLogs,
     }),
-    [reptiles, recentLogs, loading, refresh, addReptile, editReptile, removeReptile, addLog, editLog, removeLog, getReptileLogs]
+    [
+      reptiles,
+      recentLogs,
+      careSummaries,
+      loading,
+      refresh,
+      addReptile,
+      editReptile,
+      removeReptile,
+      addLog,
+      editLog,
+      removeLog,
+      getReptileLogs,
+    ]
   );
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;

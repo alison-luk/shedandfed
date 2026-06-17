@@ -11,11 +11,13 @@ import {
   View,
 } from 'react-native';
 
+import FeedingScheduleFields from '@/components/FeedingScheduleFields';
 import FormField from '@/components/FormField';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
+import { areNotificationsAvailable, requestNotificationPermissions } from '@/lib/notifications';
 
 export default function EditReptileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,7 +29,27 @@ export default function EditReptileScreen() {
   const [name, setName] = useState('');
   const [species, setSpecies] = useState('');
   const [notes, setNotes] = useState('');
+  const [feedingIntervalDays, setFeedingIntervalDays] = useState<number | null>(null);
+  const [feedingRemindersEnabled, setFeedingRemindersEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  async function handleRemindersChange(enabled: boolean) {
+    if (enabled && !areNotificationsAvailable()) {
+      return;
+    }
+
+    if (enabled) {
+      const granted = await requestNotificationPermissions();
+      if (!granted) {
+        Alert.alert(
+          'Notifications disabled',
+          'Enable notifications in your device settings to get feeding reminders.'
+        );
+        return;
+      }
+    }
+    setFeedingRemindersEnabled(enabled);
+  }
 
   useEffect(() => {
     if (!id) return;
@@ -44,6 +66,8 @@ export default function EditReptileScreen() {
       setName(reptile.name);
       setSpecies(reptile.species);
       setNotes(reptile.notes ?? '');
+      setFeedingIntervalDays(reptile.feedingIntervalDays);
+      setFeedingRemindersEnabled(reptile.feedingRemindersEnabled);
       setLoading(false);
     })();
   }, [id]);
@@ -62,7 +86,14 @@ export default function EditReptileScreen() {
 
     setSaving(true);
     try {
-      await editReptile({ id, name, species, notes });
+      await editReptile({
+        id,
+        name,
+        species,
+        notes,
+        feedingIntervalDays,
+        feedingRemindersEnabled,
+      });
       router.back();
     } catch {
       Alert.alert('Error', 'Could not save changes. Please try again.');
@@ -109,6 +140,17 @@ export default function EditReptileScreen() {
           onChangeText={setNotes}
           placeholder="Morph, enclosure setup, vet info..."
           multiline
+        />
+        <FeedingScheduleFields
+          intervalDays={feedingIntervalDays}
+          remindersEnabled={feedingRemindersEnabled}
+          onIntervalChange={(days) => {
+            setFeedingIntervalDays(days);
+            if (!days) {
+              setFeedingRemindersEnabled(false);
+            }
+          }}
+          onRemindersChange={handleRemindersChange}
         />
       </ScrollView>
     </KeyboardAvoidingView>
