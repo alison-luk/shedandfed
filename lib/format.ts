@@ -5,6 +5,13 @@ export function formatTemperature(value: number): string {
   return `${value}${TEMPERATURE_UNIT}`;
 }
 
+/** Store log dates at midday local time to avoid timezone day shifts. */
+export function toDateOnlyIso(date: Date): string {
+  const normalized = new Date(date);
+  normalized.setHours(12, 0, 0, 0);
+  return normalized.toISOString();
+}
+
 export function formatDate(iso: string): string {
   const date = new Date(iso);
   return date.toLocaleDateString(undefined, {
@@ -90,10 +97,17 @@ export function formatLogDetails(entry: LogEntry): LogDetailLine[] {
     case 'note':
       if (entry.notes) lines.push({ label: 'Note', value: entry.notes });
       break;
+    case 'health':
+      if (entry.healthCategory) lines.push({ label: 'Category', value: entry.healthCategory });
+      break;
   }
 
-  if (entry.notes && entry.type !== 'note') {
+  if (entry.notes && entry.type !== 'note' && entry.type !== 'health') {
     lines.push({ label: 'Notes', value: entry.notes });
+  }
+
+  if (entry.notes && entry.type === 'health') {
+    lines.push({ label: 'Details', value: entry.notes });
   }
 
   if (lines.length === 0) {

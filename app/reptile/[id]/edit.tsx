@@ -13,11 +13,14 @@ import {
 
 import FeedingScheduleFields from '@/components/FeedingScheduleFields';
 import FormField from '@/components/FormField';
+import ProfilePhotoPicker from '@/components/ProfilePhotoPicker';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
+import { deleteReptilePhoto, persistReptilePhoto } from '@/lib/images';
 import { areNotificationsAvailable, requestNotificationPermissions } from '@/lib/notifications';
+import * as FileSystem from 'expo-file-system/legacy';
 
 export default function EditReptileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,6 +34,8 @@ export default function EditReptileScreen() {
   const [notes, setNotes] = useState('');
   const [feedingIntervalDays, setFeedingIntervalDays] = useState<number | null>(null);
   const [feedingRemindersEnabled, setFeedingRemindersEnabled] = useState(false);
+  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [existingImageUri, setExistingImageUri] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function handleRemindersChange(enabled: boolean) {
@@ -68,6 +73,8 @@ export default function EditReptileScreen() {
       setNotes(reptile.notes ?? '');
       setFeedingIntervalDays(reptile.feedingIntervalDays);
       setFeedingRemindersEnabled(reptile.feedingRemindersEnabled);
+      setPhotoUri(reptile.imageUri);
+      setExistingImageUri(reptile.imageUri);
       setLoading(false);
     })();
   }, [id]);
@@ -86,6 +93,19 @@ export default function EditReptileScreen() {
 
     setSaving(true);
     try {
+      let imageUri = photoUri;
+      if (photoUri !== existingImageUri) {
+        if (!photoUri) {
+          await deleteReptilePhoto(id);
+          imageUri = null;
+        } else {
+          const docDir = FileSystem.documentDirectory;
+          if (!docDir || !photoUri.startsWith(docDir)) {
+            imageUri = await persistReptilePhoto(id, photoUri);
+          }
+        }
+      }
+
       await editReptile({
         id,
         name,
@@ -93,6 +113,7 @@ export default function EditReptileScreen() {
         notes,
         feedingIntervalDays,
         feedingRemindersEnabled,
+        imageUri,
       });
       router.back();
     } catch {
@@ -127,6 +148,7 @@ export default function EditReptileScreen() {
         }}
       />
       <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
+        <ProfilePhotoPicker name={name} imageUri={photoUri} onImageChange={setPhotoUri} />
         <FormField label="Name" value={name} onChangeText={setName} placeholder="e.g. Rex" />
         <FormField
           label="Species"

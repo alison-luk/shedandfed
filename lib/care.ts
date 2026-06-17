@@ -60,45 +60,55 @@ export function getNextFeedingDueDate(lastFed: string | null, intervalDays: numb
   return due;
 }
 
-export function formatLastCareLine(summary: ReptileCareSummary, compact = false): string {
-  const fed = summary.lastFed
-    ? compact
-      ? `Fed ${formatCompactRelative(summary.lastFed)}`
-      : `Last fed: ${formatRelativeTime(summary.lastFed)}`
-    : compact
-      ? 'Fed —'
-      : 'Last fed: never';
-
-  const shed = summary.lastShed
-    ? compact
-      ? `Shed ${formatCompactRelative(summary.lastShed)}`
-      : `Last shed: ${formatRelativeTime(summary.lastShed)}`
-    : compact
-      ? 'Shed —'
-      : 'Last shed: never';
-
-  const poop = summary.lastPoop
-    ? compact
-      ? `Poop ${formatCompactRelative(summary.lastPoop)}`
-      : `Last poop: ${formatRelativeTime(summary.lastPoop)}`
-    : compact
-      ? 'Poop —'
-      : 'Last poop: never';
-
-  return `${fed} · ${shed} · ${poop}`;
+export interface CareSummaryItem {
+  key: 'fed' | 'shed' | 'poop';
+  label: string;
+  icon: 'restaurant' | 'eco' | 'water-drop';
+  date: string | null;
+  value: string;
 }
 
-function formatCompactRelative(iso: string): string {
+/** Short, scannable label for last-care chips (e.g. Today, 3d ago, Never). */
+export function formatCareWhen(iso: string | null): string {
+  if (!iso) return 'Never';
+
   const days = daysSinceDate(iso);
-  if (days <= 0) return 'today';
-  if (days === 1) return '1d';
-  if (days < 7) return `${days}d`;
+  if (days <= 0) return 'Today';
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days}d ago`;
   if (days < 30) {
     const weeks = Math.round(days / 7);
-    return `${weeks}w`;
+    return weeks === 1 ? '1w ago' : `${weeks}w ago`;
   }
+
   const months = Math.round(days / 30);
-  return `${months}mo`;
+  return months === 1 ? '1mo ago' : `${months}mo ago`;
+}
+
+export function getCareSummaryItems(summary: ReptileCareSummary): CareSummaryItem[] {
+  return [
+    {
+      key: 'fed',
+      label: 'Fed',
+      icon: 'restaurant',
+      date: summary.lastFed,
+      value: formatCareWhen(summary.lastFed),
+    },
+    {
+      key: 'shed',
+      label: 'Shed',
+      icon: 'eco',
+      date: summary.lastShed,
+      value: formatCareWhen(summary.lastShed),
+    },
+    {
+      key: 'poop',
+      label: 'Poop',
+      icon: 'water-drop',
+      date: summary.lastPoop,
+      value: formatCareWhen(summary.lastPoop),
+    },
+  ];
 }
 
 export const FEEDING_INTERVAL_PRESETS = [3, 7, 14, 21, 30] as const;

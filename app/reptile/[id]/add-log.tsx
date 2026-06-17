@@ -1,4 +1,3 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import LogTypeIcon from '@/components/LogTypeIcon';
@@ -14,14 +13,31 @@ import {
   View,
 } from 'react-native';
 
+import DateField from '@/components/DateField';
 import FormField from '@/components/FormField';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useData } from '@/contexts/DataContext';
-import { LOG_TYPE_LABELS, TEMPERATURE_UNIT, type LogType, type WeightUnit } from '@/lib/types';
+import { toDateOnlyIso } from '@/lib/format';
+import { validateLogForm } from '@/lib/logValidation';
+import {
+  HEALTH_CATEGORIES,
+  LOG_TYPE_LABELS,
+  TEMPERATURE_UNIT,
+  type LogType,
+  type WeightUnit,
+} from '@/lib/types';
 
-const LOG_TYPES: LogType[] = ['feeding', 'shedding', 'temperature', 'weight', 'poop', 'note'];
+const LOG_TYPES: LogType[] = [
+  'feeding',
+  'shedding',
+  'temperature',
+  'weight',
+  'poop',
+  'health',
+  'note',
+];
 
 const SHED_OPTIONS = ['Complete', 'Partial', 'Stuck shed', 'Blue phase'];
 
@@ -47,6 +63,7 @@ function buildLogPayload(
     amount: string;
     shedQuality: string;
     poopQuality: string;
+    healthCategory: string;
     hotSide: string;
     coolSide: string;
     ambient: string;
@@ -57,12 +74,13 @@ function buildLogPayload(
   return {
     reptileId,
     type,
-    date: date.toISOString(),
+    date: toDateOnlyIso(date),
     notes: fields.notes || undefined,
     food: type === 'feeding' ? fields.food : undefined,
     amount: type === 'feeding' ? fields.amount : undefined,
     shedQuality: type === 'shedding' ? fields.shedQuality : undefined,
     poopQuality: type === 'poop' ? fields.poopQuality : undefined,
+    healthCategory: type === 'health' ? fields.healthCategory : undefined,
     hotSide: type === 'temperature' && fields.hotSide ? parseFloat(fields.hotSide) : undefined,
     coolSide: type === 'temperature' && fields.coolSide ? parseFloat(fields.coolSide) : undefined,
     ambient: type === 'temperature' && fields.ambient ? parseFloat(fields.ambient) : undefined,
@@ -86,13 +104,17 @@ export default function AddLogScreen() {
   const [loadingEntry, setLoadingEntry] = useState(isEditing);
   const [type, setType] = useState<LogType>(initialType);
   const typeLocked = Boolean(typeParam) && !isEditing;
-  const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [date, setDate] = useState(() => {
+    const today = new Date();
+    today.setHours(12, 0, 0, 0);
+    return today;
+  });
   const [notes, setNotes] = useState('');
   const [food, setFood] = useState('');
   const [amount, setAmount] = useState('');
   const [shedQuality, setShedQuality] = useState('Complete');
   const [poopQuality, setPoopQuality] = useState('Normal');
+  const [healthCategory, setHealthCategory] = useState<string>(HEALTH_CATEGORIES[0]);
   const [hotSide, setHotSide] = useState('');
   const [coolSide, setCoolSide] = useState('');
   const [ambient, setAmbient] = useState('');
@@ -132,6 +154,7 @@ export default function AddLogScreen() {
       setAmount(entry.amount ?? '');
       setShedQuality(entry.shedQuality ?? 'Complete');
       setPoopQuality(entry.poopQuality ?? 'Normal');
+      setHealthCategory(entry.healthCategory ?? HEALTH_CATEGORIES[0]);
       setHotSide(entry.hotSide != null ? String(entry.hotSide) : '');
       setCoolSide(entry.coolSide != null ? String(entry.coolSide) : '');
       setAmbient(entry.ambient != null ? String(entry.ambient) : '');
@@ -144,12 +167,28 @@ export default function AddLogScreen() {
   async function handleSave() {
     if (!id) return;
 
+    const validationError = validateLogForm({
+      type,
+      notes,
+      food,
+      amount,
+      hotSide,
+      coolSide,
+      ambient,
+      weight,
+    });
+    if (validationError) {
+      Alert.alert('Missing details', validationError);
+      return;
+    }
+
     const payload = buildLogPayload(id, type, date, {
       notes,
       food,
       amount,
       shedQuality,
       poopQuality,
+      healthCategory,
       hotSide,
       coolSide,
       ambient,
@@ -235,38 +274,22 @@ export default function AddLogScreen() {
           </View>
         )}
 
-        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Date & Time</Text>
-        <Pressable
-          onPress={() => setShowDatePicker(true)}
-          style={[styles.dateButton, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <MaterialIcons name="event" size={22} color={colors.tint} />
-          <Text style={styles.dateText}>
-            {date.toLocaleString(undefined, {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
-          </Text>
-        </Pressable>
-
-        {showDatePicker ? (
-          <DateTimePicker
-            value={date}
-            mode="datetime"
-            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-            onChange={(_, selected) => {
-              setShowDatePicker(Platform.OS === 'ios');
-              if (selected) setDate(selected);
-            }}
-          />
-        ) : null}
+        <DateField value={date} onChange={setDate} />
 
         {type === 'feeding' ? (
           <>
-            <FormField label="Food" value={food} onChangeText={setFood} placeholder="e.g. Frozen mouse" />
-            <FormField label="Amount" value={amount} onChangeText={setAmount} placeholder="e.g. 1 medium" />
+            <FormField
+              label="Food (required if no amount)"
+              value={food}
+              onChangeText={setFood}
+              placeholder="e.g. Frozen mouse"
+            />
+            <FormField
+              label="Amount (required if no food)"
+              value={amount}
+              onChangeText={setAmount}
+              placeholder="e.g. 1 medium"
+            />
           </>
         ) : null}
 
@@ -326,6 +349,9 @@ export default function AddLogScreen() {
 
         {type === 'temperature' ? (
           <>
+            <Text style={[styles.sectionHint, { color: colors.textSecondary }]}>
+              Enter at least one temperature reading.
+            </Text>
             <FormField
               label={`Hot Side (${TEMPERATURE_UNIT})`}
               value={hotSide}
@@ -350,10 +376,37 @@ export default function AddLogScreen() {
           </>
         ) : null}
 
+        {type === 'health' ? (
+          <>
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>Category</Text>
+            <View style={styles.optionRow}>
+              {HEALTH_CATEGORIES.map((option) => {
+                const selected = healthCategory === option;
+                return (
+                  <Pressable
+                    key={option}
+                    onPress={() => setHealthCategory(option)}
+                    style={[
+                      styles.optionChip,
+                      {
+                        backgroundColor: selected ? colors.tint : colors.card,
+                        borderColor: selected ? colors.tint : colors.border,
+                      },
+                    ]}>
+                    <Text style={{ color: selected ? '#fff' : colors.text, fontSize: 13 }}>
+                      {option}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </>
+        ) : null}
+
         {type === 'weight' ? (
           <>
             <FormField
-              label="Weight"
+              label="Weight (required)"
               value={weight}
               onChangeText={setWeight}
               placeholder="e.g. 450"
@@ -385,10 +438,22 @@ export default function AddLogScreen() {
         ) : null}
 
         <FormField
-          label={type === 'note' ? 'Note' : 'Notes (optional)'}
+          label={
+            type === 'note'
+              ? 'Note (required)'
+              : type === 'health'
+                ? 'Details (required)'
+                : 'Notes (optional)'
+          }
           value={notes}
           onChangeText={setNotes}
-          placeholder={type === 'note' ? 'Write your note here...' : 'Additional details...'}
+          placeholder={
+            type === 'note'
+              ? 'Write your note here...'
+              : type === 'health'
+                ? 'Symptoms, treatment, vet notes...'
+                : 'Additional details...'
+          }
           multiline
         />
       </ScrollView>
@@ -424,6 +489,11 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
+  sectionHint: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 12,
+  },
   typeGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -455,18 +525,6 @@ const styles = StyleSheet.create({
   typeBannerText: {
     fontSize: 17,
     fontWeight: '600',
-  },
-  dateButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginBottom: 20,
-  },
-  dateText: {
-    fontSize: 16,
   },
   optionRow: {
     flexDirection: 'row',

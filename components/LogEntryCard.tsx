@@ -5,7 +5,7 @@ import LogTypeIcon from '@/components/LogTypeIcon';
 import { Text } from '@/components/Themed';
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
-import { formatDateTime, formatLogSummary } from '@/lib/format';
+import { formatDate, formatLogSummary } from '@/lib/format';
 import { LOG_TYPE_LABELS, type LogEntry } from '@/lib/types';
 
 interface LogEntryCardProps {
@@ -32,7 +32,7 @@ export default function LogEntryCard({ entry, reptileName, onDelete, onLongPress
         <View style={styles.header}>
           <Text style={styles.type}>{LOG_TYPE_LABELS[entry.type]}</Text>
           <Text style={[styles.date, { color: colors.textSecondary }]}>
-            {formatDateTime(entry.date)}
+            {formatDate(entry.date)}
           </Text>
         </View>
         {reptileName ? (
